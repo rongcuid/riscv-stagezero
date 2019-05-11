@@ -168,7 +168,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
           goto(sFetchWait)
         } otherwise {
           tepc := pc
-//          tcause := SZException.InstructionAccessFault.asBits.asUInt
+          tcause := SZException.InstructionAccessFault.asBits.asUInt
           goto(sException)
         }
       } // sFetch.whenIsActive
