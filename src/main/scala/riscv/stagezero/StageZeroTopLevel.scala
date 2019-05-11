@@ -89,26 +89,18 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       * 运算的状态
       */
     val sAlu: State = new State
-//    val sAluAdd: State = new State
-//    val sAluSub: State = new State
-//    val sAluSll: State = new State
-//    val sAluSlt: State = new State
-//    val sAluSltu: State = new State
-//    val sAluXor: State = new State
-//    val sAluSrl: State = new State
-//    val sAluSra: State = new State
-//    val sAluOr: State = new State
-//    val sAluAnd: State = new State
 
     /**
       * 控制转移状态
       */
-    val sBeq: State = new State
-    val sBne: State = new State
-    val sBlt: State = new State
-    val sBge: State = new State
-    val sBltu: State = new State
-    val sBgeu: State = new State
+    val sBr: State = new State
+//    val sBeq: State = new State
+//    val sBne: State = new State
+//    val sBlt: State = new State
+//    val sBge: State = new State
+//    val sBltu: State = new State
+//    val sBgeu: State = new State
+
     val sJal: State = new State
     val sJalr: State = new State
 
@@ -143,6 +135,10 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val sWriteBackMem2reg: State = new State
     val sWriteBackAlu2reg: State = new State
 
+    /**
+      * PC = PC + 4
+      */
+    val sIncPc: State = new State
 
     /**
       * 数据路径（寄存器）
@@ -288,7 +284,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * BRANCH（分支）指令的解码。
         *
-        * (根据funct3) -> sRs2Op2 -> sRs1Op1 -> sAlu -> sBxx（分支）
+        * (_) -> sRs2Op2 -> sRs1Op1 -> sAlu -> sBr
         */
       // TODO
       sBrDec.whenIsActive{}
@@ -365,6 +361,18 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
         */
       // TODO
       sImmOp2.whenIsActive{}
+
+      /**
+        * ALU操作
+        *
+        * (branch) -> sBr
+        * (jump & jalJalrN) -> sResOp1FourOp2
+        * (jump & !jalJalrN) -> sJalr
+        * memory -> sMmap
+        * (_) -> sWriteBackAlu2reg
+        */
+      // TODO
+      sAlu.whenIsActive{}
 
     } // when (io.run)
   }
