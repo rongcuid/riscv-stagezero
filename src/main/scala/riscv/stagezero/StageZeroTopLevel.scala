@@ -25,22 +25,22 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
   /**
     * 常量
     */
-  // 由于是字地址，所以减少2位
-  val privMemAddrWidth: Int = (Math.log10(privMemSize) / Math.log10(2)).toInt - 2
-  val firmware: Array[Bits] = Array.fill(privMemSize / 4)(B"16'b0")
+  // 由于是半字地址，所以减少1位
+  val privMemAddrWidth: Int = (Math.log10(privMemSize) / Math.log10(2)).toInt - 1
+  val firmware: Array[Bits] = Array.fill(privMemSize / 2)(B"8'b0")
 
   /**
     * 私有可执行内存，地址从0xC0000000开始。SSRAM无输出寄存器，延迟一周期。
     */
   val memPriv = Mem(Bits(16 bits), initialContent = firmware)
+
   val memPrivAddr: UInt = UInt(privMemAddrWidth bits)
   val memPrivValid: Bool = Reg(Bool) init False
-
+  val memPrivRData: Bits = Bits(16 bits)
   val memPrivWData: Bits = Bits(16 bits)
   val memPrivWen: Bool = Bool
-  val memPrivWstrb: Bits = Bits(4 bits)
+  val memPrivWstrb: Bits = Bits(2 bits)
 
-  val memPrivRData: Bits = Bits(16 bits)
   memPrivRData := memPriv.readWriteSync(
     memPrivAddr, memPrivWData, memPrivValid, memPrivWen, memPrivWstrb)
 
@@ -57,14 +57,15 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     /**
       * 解码的状态
       */
-    val sDecode: State = new State
+    val sOpDec: State = new State
+    val sOpimmDec: State = new State
     val sRs1Op1: State = new State
     val sRs2Op2: State = new State
     val sImmOp2: State = new State
 
-    val sOpDec: State = new State
-    val sOpimmDec: State = new State
     val sBrDec: State = new State
+    val sJalDec: State = new State
+    val sJrDec: State = new State
     val sLwDec: State = new State
     val sSwDec: State = new State
 
@@ -134,18 +135,18 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     /**
       * 数据路径（寄存器）
       */
-    val pc: UInt = Reg(UInt(32 bits)) init U"32'hC0000000"
-    val waitCounter: UInt = Reg(UInt(1 bits)) init 0
-    val gpio0: Bits = Reg(Bits(8 bits)) init 0x00
-    val dir0: Bits = Reg(Bits(8 bits)) init 0x00
+    val pc = Reg(UInt(32 bits)) init U"32'hC0000000"
+    val waitCounter = Reg(UInt(1 bits)) init 0
+    val gpio0 = Reg(Bits(8 bits)) init 0x00
+    val dir0 = Reg(Bits(8 bits)) init 0x00
     // 高16位/低16位
-    val memHigh: Bool = Reg(Bool) init False
+    val memHigh = Reg(Bool) init False
 
     /**
       * 数据路径（陷阱）
       */
-    val tcause: UInt = Reg(UInt(32 bits))
-    val tepc: UInt = Reg(UInt(32 bits))
+    val tcause = Reg(UInt(32 bits))
+    val tepc = Reg(UInt(32 bits))
 
     /**
       * 数据路径（组合）
@@ -159,28 +160,72 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     io.mem_valid := False
     io.mem_wstrb := B"4'b0000"
     // 物理字地址（32位）
-    memPrivAddr := pc(privMemAddrWidth+1 downto 2)
+    memPrivAddr := U(
+      (privMemAddrWidth - 1 downto 1) -> pc(privMemAddrWidth downto 2),
+      0 -> memHigh
+    )
     memPrivValid := False
 
     /**
       * 运行主状态机
       */
     when (io.run) {
+
+      /**
+        * 发射状态（初始）。地址合法则发射等待。下周期开始读取低半字
+        *
+        * (地址合法) -> sFetchWait（等待）；请求读取低半字
+        * (地址非法) -> sException（异常）；记录异常原因
+        */
       sFetch.whenIsActive {
-        /**
-          * 执行内存地址从0xC0000000开始
-          */
+        // 执行内存地址从0xC0000000开始
         when (pc(31 downto 30) === U"2'b11") {
           // 下周期开始读取内存
           memPrivValid := True
+          // 从低半字开始
+          memHigh := False
           // 等待
-          //goto(sFetchWait)
+          goto(sFetchWait)
         } otherwise {
           tepc := pc
           tcause := SZException.InstructionAccessFault.asBits.asUInt
           goto(sException)
         }
       } // sFetch.whenIsActive
+
+      /**
+        * 发射等待状态。开始读取低半字；下周期开始读取高半字。
+        *
+        * (True) -> sOpDec（操作码解码）；请求读取高半字
+        */
+      sFetchWait.whenIsActive{
+        // 等待一周期取低半字，并且准备取高半字
+        memPrivValid := True
+        // 高半字
+        memHigh := True
+        // 解码
+        goto(sOpDec)
+      } // sFetchWait.whenIsActive
+
+      /**
+        * 操作码解码状态。当前内存输出指令低半字；开始读取高半字；根据操作码解码结果改变状态
+        *
+        * 写入指令低半字
+        *
+        * (OP) -> sOpDec
+        * (OPIMM) -> sOpimmDec
+        * (BRANCH) -> sBrDec
+        * (LOAD) -> sLwDec
+        * (STORE) -> sSwDec
+        * (JAL) -> sJalDec
+        * (JR) -> sJrDec
+        * (非法操作码) -> sException（异常）；记录原因
+        */
+      sOpDec.whenIsActive{
+        val opcode = Bits(7 bits)
+        opcode := memPrivRData(6 downto 0)
+      }
+
     } // when (io.run)
   }
 }
