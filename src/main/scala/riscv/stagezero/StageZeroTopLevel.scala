@@ -27,15 +27,22 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     */
   // 由于是字地址，所以减少2位
   val privMemAddrWidth: Int = (Math.log10(privMemSize) / Math.log10(2)).toInt - 2
-  val firmware: Array[Bits] = Array.fill(privMemSize / 4)(B"0")
+  val firmware: Array[Bits] = Array.fill(privMemSize / 4)(B"16'b0")
 
   /**
-    * 私有可执行内存，地址从0xC0000000开始。应带输出寄存器，即延迟2周期。
+    * 私有可执行内存，地址从0xC0000000开始。SSRAM无输出寄存器，延迟一周期。
     */
-  val memPriv = Mem(Bits(32 bits), initialContent = firmware)
+  val memPriv = Mem(Bits(16 bits), initialContent = firmware)
   val memPrivAddr: UInt = UInt(privMemAddrWidth bits)
   val memPrivValid: Bool = Reg(Bool) init False
-  val memPrivRData: Bits = memPriv.readSync(address = memPrivAddr, enable = memPrivValid)
+
+  val memPrivWData: Bits = Bits(16 bits)
+  val memPrivWen: Bool = Bool
+  val memPrivWstrb: Bits = Bits(4 bits)
+
+  val memPrivRData: Bits = Bits(16 bits)
+  memPrivRData := memPriv.readWriteSync(
+    memPrivAddr, memPrivWData, memPrivValid, memPrivWen, memPrivWstrb)
 
   /**
     * 核心状态机。大部分使用摩尔状态机，以最大限度降低对主频的影响（大概）。注意：这也会导致周期数增加。
@@ -165,7 +172,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
           // 下周期开始读取内存
           memPrivValid := True
           // 等待
-          goto(sFetchWait)
+          //goto(sFetchWait)
         } otherwise {
           tepc := pc
           tcause := SZException.InstructionAccessFault.asBits.asUInt
