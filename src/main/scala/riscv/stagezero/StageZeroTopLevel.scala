@@ -57,6 +57,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     /**
       * 解码的状态
       */
+    val sOpcodeDec: State = new State
     val sOpDec: State = new State
     val sOpimmDec: State = new State
     val sRs1Op1: State = new State
@@ -97,8 +98,8 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val sBge: State = new State
     val sBltu: State = new State
     val sBgeu: State = new State
-    val sJal: State = new State
-    val sJr: State = new State
+    val sJ: State = new State
+//    val sJr: State = new State
 
     /**
       * 内存映射的状态
@@ -135,12 +136,12 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     /**
       * 数据路径（寄存器）
       */
-    val pc = Reg(UInt(32 bits)) init U"32'hC0000000"
-    val waitCounter = Reg(UInt(1 bits)) init 0
-    val gpio0 = Reg(Bits(8 bits)) init 0x00
-    val dir0 = Reg(Bits(8 bits)) init 0x00
+    val pc: UInt = Reg(UInt(32 bits)) init U"32'hC0000000"
+    val waitCounter: UInt = Reg(UInt(1 bits)) init 0
+    val gpio0: Bits = Reg(Bits(8 bits)) init 0x00
+    val dir0: Bits = Reg(Bits(8 bits)) init 0x00
     // 高16位/低16位
-    val memHigh = Reg(Bool) init False
+    val memHigh: Bool = Reg(Bool) init False
 
     /**
       * 数据路径（陷阱）
@@ -153,6 +154,8 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       */
     io.gpio0_o := gpio0
     io.dir0_o := dir0
+    val opcode: Bits = Bits(7 bits)
+    opcode := memPrivRData(6 downto 0)
 
     /**
       * 默认值（副作用）
@@ -221,10 +224,40 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
         * (JR) -> sJrDec
         * (非法操作码) -> sException（异常）；记录原因
         */
-      sOpDec.whenIsActive{
-        val opcode = Bits(7 bits)
-        opcode := memPrivRData(6 downto 0)
-      }
+      // TODO
+      sOpcodeDec.whenIsActive{}
+
+      /**
+        * OP（运算）指令的解码。此时完整的指令已经读取完成。
+        *
+        * (根据func3+funct7) -> sRs2Op2 -> sRs1Op1 -> sAluXXX（操作） -> sWriteBackAlu2reg
+        * (非法指令) -> sException
+        */
+      // TODO
+      sOpDec.whenIsActive{}
+
+      /**
+        * OPIMM（即时数运算）指令的解码。
+        *
+        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAluXXX（操作） -> sWriteBackAlu2reg
+        * (非法指令) -> sException
+        */
+      // TODO
+      sOpimmDec.whenIsActive{}
+
+      /**
+        * BRANCH（分支）指令的解码。
+        *
+        * (根据funct3) -> sRs2Op2 -> sRs1Op1 -> sAluXXX -> sBxx（分支）
+        */
+      sBrDec.whenIsActive{}
+
+      /**
+        * JAL（跳转）指令的解码
+        *
+        * (跳转地址对齐) -> sImmOp2 -> sAluAdd (PC + imm) -> sAluAdd (+4) -> sJ
+        * (跳转地址不对齐) -> sException
+        */
 
     } // when (io.run)
   }
