@@ -30,6 +30,7 @@ bin/
 #User
 /*.vhd
 /*.v
+/*.bin
 *.cf
 *.json
 *.vcd
