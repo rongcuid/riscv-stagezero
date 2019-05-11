@@ -171,17 +171,20 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       * 数据路径（状态机流程）
       */
     // 真为读取，假为写入
-    val loadStoreN: Bool = Bool
+    val loadStoreN: Bool = Reg(Bool) init False
     // 真则用内存回写，假则用运算结果回写
-    val memToReg: Bool = Bool
+    val memToReg: Bool = Reg(Bool) init False
     // 真则跳转
-    val doJump: Bool = Bool
+    val doJump: Bool = Reg(Bool) init False
     // 真则相对跳转，假则绝对跳转
-    val jalJalrN: Bool = Bool
+    val jalJalrN: Bool = Reg(Bool) init False
+    // 真则在计算偏移值
+    val offset: Bool = Reg(Bool) init False
 
     /**
       * 数据路径（陷阱）
       */
+
     val tcause = Reg(UInt(32 bits))
     val tepc = Reg(UInt(32 bits))
 
@@ -227,7 +230,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
           goto(sFetchWait)
         } otherwise {
           tepc := pc
-          tcause := SZException.InstructionAccessFault.asBits.asUInt
+          tcause := U(SZException.InstructionAccessFault.asBits, 32 bits)
           goto(sException)
         }
       } // sFetch.whenIsActive
@@ -366,7 +369,8 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
         * ALU操作
         *
         * (branch) -> sBr
-        * (jump & jalJalrN) -> sResOp1FourOp2
+        * (jump & jalJalrN & offset) -> sResOp1FourOp2
+        * (jump & jalJalrN & !offset) -> sJal
         * (jump & !jalJalrN) -> sJalr
         * memory -> sMmap
         * (_) -> sWriteBackAlu2reg
