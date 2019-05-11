@@ -1,6 +1,7 @@
 package riscv.stagezero
 
-import riscv.stagezero.core.SZException
+//import riscv.stagezero.core.SZException
+import riscv.stagezero.core._
 import spinal.core._
 import spinal.lib._
 import spinal.lib.fsm._
@@ -55,20 +56,29 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val sFetchWait: State = new State
 
     /**
-      * 解码的状态
+      * 一级解码（操作码）
       */
     val sOpcodeDec: State = new State
+
+    /**
+      * 二级解码
+      */
     val sOpDec: State = new State
     val sOpimmDec: State = new State
-    val sRs1Op1: State = new State
-    val sRs2Op2: State = new State
-    val sImmOp2: State = new State
-
     val sBrDec: State = new State
     val sJalDec: State = new State
     val sJalrDec: State = new State
     val sLwDec: State = new State
     val sSwDec: State = new State
+
+    /**
+      * 读取ALU参数
+      */
+    val sPcOp1: State = new State
+    val sRs1Op1: State = new State
+    val sResOp1FourOp2: State = new State
+    val sRs2Op2: State = new State
+    val sImmOp2: State = new State
 
     /**
       * 异常控制状态
@@ -78,16 +88,17 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     /**
       * 运算的状态
       */
-    val sAluAdd: State = new State
-    val sAluSub: State = new State
-    val sAluSll: State = new State
-    val sAluSlt: State = new State
-    val sAluSltu: State = new State
-    val sAluXor: State = new State
-    val sAluSrl: State = new State
-    val sAluSra: State = new State
-    val sAluOr: State = new State
-    val sAluAnd: State = new State
+    val sAlu: State = new State
+//    val sAluAdd: State = new State
+//    val sAluSub: State = new State
+//    val sAluSll: State = new State
+//    val sAluSlt: State = new State
+//    val sAluSltu: State = new State
+//    val sAluXor: State = new State
+//    val sAluSrl: State = new State
+//    val sAluSra: State = new State
+//    val sAluOr: State = new State
+//    val sAluAnd: State = new State
 
     /**
       * 控制转移状态
@@ -142,6 +153,35 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val dir0: Bits = Reg(Bits(8 bits)) init 0x00
     // 高16位/低16位
     val memHigh: Bool = Reg(Bool) init False
+
+    /**
+      * 数据路径（ALU）
+      */
+    // ALU 所有输入/输出都是同步的
+    val aluOp1: Bits = Reg(Bits(32 bits)) init 0
+    val aluOp2: Bits = Reg(Bits(32 bits)) init 0
+    val aluSigned: Bool = Reg(Bool) init False
+    val aluOpSel = Reg(SZAluOp()) init SZAluOp.Add
+    val aluRes: Bits = Reg(Bits(32 bits)) init 0
+
+    val alu = SZAlu()
+    alu.io.op1 <> aluOp1
+    alu.io.op2 <> aluOp2
+    alu.io.signed <> aluSigned
+    alu.io.opSel <> aluOpSel
+    alu.io.res <> aluRes
+
+    /**
+      * 数据路径（状态机流程）
+      */
+    // 真为读取，假为写入
+    val loadStoreN: Bool = Bool
+    // 真则用内存回写，假则用运算结果回写
+    val memToReg: Bool = Bool
+    // 真则跳转
+    val doJump: Bool = Bool
+    // 真则相对跳转，假则绝对跳转
+    val jalJalrN: Bool = Bool
 
     /**
       * 数据路径（陷阱）
@@ -230,7 +270,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * OP（运算）指令的解码。此时完整的指令已经读取完成。
         *
-        * (根据func3+funct7) -> sRs2Op2 -> sRs1Op1 -> sAluXXX（操作） -> sWriteBackAlu2reg
+        * (根据func3+funct7) -> sRs2Op2 -> sRs1Op1 -> sAlu -> sWriteBackAlu2reg
         * (非法指令) -> sException
         */
       // TODO
@@ -239,7 +279,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * OPIMM（即时数运算）指令的解码。
         *
-        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAluXXX（操作） -> sWriteBackAlu2reg
+        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAlu -> sWriteBackAlu2reg
         * (非法指令) -> sException
         */
       // TODO
@@ -248,7 +288,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * BRANCH（分支）指令的解码。
         *
-        * (根据funct3) -> sRs2Op2 -> sRs1Op1 -> sAluXXX -> sBxx（分支）
+        * (根据funct3) -> sRs2Op2 -> sRs1Op1 -> sAlu -> sBxx（分支）
         */
       // TODO
       sBrDec.whenIsActive{}
@@ -256,8 +296,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * JAL（跳转链接）指令的解码
         *
-        * (跳转地址对齐) -> sImmOp2 -> sAluAdd (PC + imm) -> sAluAdd (+4) -> sJal
-        * (跳转地址不对齐) -> sException
+        * (_) -> sImmOp2 -> sPcOp1 -> sAlu (PC + imm) -> sResOp1FourOp2 -> sAlu (+4) -> sJal
         */
       // TODO
       sJalDec.whenIsActive{}
@@ -265,7 +304,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * JALR（跳转链接寄存器）指令的解码
         *
-        * sImmOp2 -> sRs1Op1 -> sAluAdd -> sJalr
+        * sImmOp2 -> sRs1Op1 -> sAlu -> sJalr
         */
       // TODO
       sJalrDec.whenIsActive{}
@@ -273,7 +312,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * LOAD（读取）指令的解码
         *
-        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAluAdd -> sMmap
+        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAlu (rs1 + imm) -> sMmap
         */
       // TODO
       sLwDec.whenIsActive{}
@@ -281,10 +320,52 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * STORE（储存）指令的解码
         *
-        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAluAdd -> sMmap
+        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAlu (rs1 + imm) -> sMmap
         */
       // TODO
       sSwDec.whenIsActive{}
+
+      /**
+        * 读取RS1至Op1
+        *
+        * (_) -> sAlu
+        */
+      // TODO
+      sRs1Op1.whenIsActive{}
+
+      /**
+        * 读取PC至Op1
+        *
+        * (_) -> sAlu
+        */
+      // TODO
+      sPcOp1.whenIsActive{}
+
+      /**
+        * 读取ALU结果至Op1，并将4写入Op2
+        *
+        * (_) -> sAlu
+        */
+      // TODO
+      sResOp1FourOp2.whenIsActive{}
+
+      /**
+        * 读取RS2至Op2
+        *
+        * (_) -> sRs1Op1
+        */
+      // TODO
+      sRs2Op2.whenIsActive{}
+
+      /**
+        * 读取imm至Op2
+        *
+        * (jump & jalJalrN) -> sPcOp1
+        * (_) -> sRs1Op1
+        */
+      // TODO
+      sImmOp2.whenIsActive{}
+
     } // when (io.run)
   }
 }
