@@ -66,7 +66,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
 
     val sBrDec: State = new State
     val sJalDec: State = new State
-    val sJrDec: State = new State
+    val sJalrDec: State = new State
     val sLwDec: State = new State
     val sSwDec: State = new State
 
@@ -98,8 +98,8 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val sBge: State = new State
     val sBltu: State = new State
     val sBgeu: State = new State
-    val sJ: State = new State
-//    val sJr: State = new State
+    val sJal: State = new State
+    val sJalr: State = new State
 
     /**
       * 内存映射的状态
@@ -221,7 +221,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
         * (LOAD) -> sLwDec
         * (STORE) -> sSwDec
         * (JAL) -> sJalDec
-        * (JR) -> sJrDec
+        * (JALR) -> sJalrDec
         * (非法操作码) -> sException（异常）；记录原因
         */
       // TODO
@@ -250,15 +250,40 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
         *
         * (根据funct3) -> sRs2Op2 -> sRs1Op1 -> sAluXXX -> sBxx（分支）
         */
+      // TODO
       sBrDec.whenIsActive{}
 
       /**
-        * JAL（跳转）指令的解码
+        * JAL（跳转链接）指令的解码
         *
-        * (跳转地址对齐) -> sImmOp2 -> sAluAdd (PC + imm) -> sAluAdd (+4) -> sJ
+        * (跳转地址对齐) -> sImmOp2 -> sAluAdd (PC + imm) -> sAluAdd (+4) -> sJal
         * (跳转地址不对齐) -> sException
         */
+      // TODO
+      sJalDec.whenIsActive{}
 
+      /**
+        * JALR（跳转链接寄存器）指令的解码
+        *
+        * sImmOp2 -> sRs1Op1 -> sAluAdd -> sJalr
+        */
+      // TODO
+      sJalrDec.whenIsActive{}
+
+      /**
+        * LOAD（读取）指令的解码
+        *
+        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAluAdd -> sMmap
+        */
+      // TODO
+      sLwDec.whenIsActive{}
+
+      /**
+        * STORE（储存）指令的解码
+        *
+        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAluAdd -> sMmap
+        */
+      sSwDec.whenIsActive{}
     } // when (io.run)
   }
 }
