@@ -138,6 +138,8 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val waitCounter: UInt = Reg(UInt(1 bits)) init 0
     val gpio0: Bits = Reg(Bits(8 bits)) init 0x00
     val dir0: Bits = Reg(Bits(8 bits)) init 0x00
+    // 高16位/低16位
+    val memHigh: Bool = Reg(Bool) init False
 
     /**
       * 数据路径（陷阱）
