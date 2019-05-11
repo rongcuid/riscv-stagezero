@@ -182,6 +182,21 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val offset: Bool = Reg(Bool) init False
 
     /**
+      * 数据路径（寄存器文件）
+      */
+    val aRs1: UInt = Reg(UInt(4 bits))
+    val aRs2: UInt = Reg(UInt(4 bits))
+
+    val dRs1: Bits = Bits(32 bits)
+    val dRs2: Bits = Bits(32 bits)
+
+    val aRd:  UInt = Reg(UInt(4 bits))
+    val dRd:  Bits = Reg(Bits(32 bits))
+    val writeback: Bool = Reg(Bool)
+
+    val regFile = SZRegFile()
+
+    /**
       * 数据路径（陷阱）
       */
 
