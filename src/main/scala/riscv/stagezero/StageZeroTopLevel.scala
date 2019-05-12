@@ -1,6 +1,5 @@
 package riscv.stagezero
 
-//import riscv.stagezero.core.SZException
 import riscv.stagezero.core._
 import spinal.core._
 import spinal.lib._
