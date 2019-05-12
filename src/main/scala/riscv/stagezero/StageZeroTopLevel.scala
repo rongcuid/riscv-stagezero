@@ -91,20 +91,6 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val sAlu: State = new State
 
     /**
-      * 控制转移状态
-      */
-    val sBr: State = new State
-//    val sBeq: State = new State
-//    val sBne: State = new State
-//    val sBlt: State = new State
-//    val sBge: State = new State
-//    val sBltu: State = new State
-//    val sBgeu: State = new State
-
-    val sJal: State = new State
-    val sJalr: State = new State
-
-    /**
       * 内存映射的状态
       */
     val sMmap: State = new State
@@ -112,32 +98,33 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     /**
       * 可执行（私有）内存的状态
       */
-    val sLwPriMem: State = new State
-    val sLhPriMem: State = new State
-    val sLbPriMem: State = new State
-    val sSwPriMem: State = new State
-    val sShPriMem: State = new State
-    val sSbPriMem: State = new State
+    val sPriMemW: State = new State
+    val sPriMemH: State = new State
+    val sPriMemB: State = new State
 
     /**
       * 不可执行（外部）内存状态
       */
-    val sLwExtMem: State = new State
-    val sLhExtMem: State = new State
-    val sLbExtMem: State = new State
-    val sSwExtMem: State = new State
-    val sShExtMem: State = new State
-    val sSbExtMem: State = new State
+    val sExtMemW: State = new State
+    val sExtMemH: State = new State
+    val sExtMemB: State = new State
+
+    /**
+      * 输入/输出设备操作状态
+      */
+    val sIoW: State = new State
+    val sIoH: State = new State
+    val sIoB: State = new State
 
     /**
       * 回写状态
       */
-    val sWriteBackMem2reg: State = new State
-    val sWriteBackAlu2reg: State = new State
+    val sWriteBack: State = new State
 
     /**
-      * PC = PC + 4
+      * 控制转移状态
       */
+    val sJ: State = new State
     val sIncPc: State = new State
 
     /**
@@ -149,6 +136,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val dir0: Bits = Reg(Bits(8 bits)) init 0x00
     // 高16位/低16位
     val memHigh: Bool = Reg(Bool) init False
+    val memWrite: Bool = Reg(Bool) init False
 
     /**
       * 数据路径（ALU）
@@ -158,7 +146,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val aluOp2: Bits = Reg(Bits(32 bits)) init 0
     val aluSigned: Bool = Reg(Bool) init False
     val aluOpSel = Reg(SZAluOp()) init SZAluOp.Add
-    val aluRes: Bits = Reg(Bits(32 bits)) init 0
+    val aluRes: Bits = Bits(32 bits)
 
     val alu = SZAlu()
     alu.io.op1 <> aluOp1
@@ -176,6 +164,8 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val memToReg: Bool = Reg(Bool) init False
     // 真则跳转
     val doJump: Bool = Reg(Bool) init False
+    // 真则分支，假则跳转
+    val branchJumpN: Bool = Reg(Bool) init False
     // 真则相对跳转，假则绝对跳转
     val jalJalrN: Bool = Reg(Bool) init False
     // 真则在计算偏移值
@@ -195,6 +185,12 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
     val writeback: Bool = Reg(Bool)
 
     val regFile = SZRegFile()
+    regFile.io.aRs1 <> aRs1
+    regFile.io.dRs1 <> dRs1
+    regFile.io.aRs2 <> aRs2
+    regFile.io.dRs2 <> dRs2
+    regFile.io.aRd <> aRd
+    regFile.io.dRd <> dRd
 
     /**
       * 数据路径（陷阱）
@@ -310,7 +306,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * JAL（跳转链接）指令的解码
         *
-        * (_) -> sImmOp2 -> sPcOp1 -> sAlu (PC + imm) -> sResOp1FourOp2 -> sAlu (+4) -> sJal
+        * (_) -> sImmOp2 -> sPcOp1 -> sAlu (PC + imm) -> sResOp1FourOp2 -> sAlu (+4) -> sJ
         */
       // TODO
       sJalDec.whenIsActive{}
@@ -318,7 +314,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * JALR（跳转链接寄存器）指令的解码
         *
-        * sImmOp2 -> sRs1Op1 -> sAlu -> sJalr
+        * sImmOp2 -> sRs1Op1 -> sAlu -> sJ -> sWriteBackAlu2reg
         */
       // TODO
       sJalrDec.whenIsActive{}
@@ -385,13 +381,77 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
         *
         * (branch) -> sBr
         * (jump & jalJalrN & offset) -> sResOp1FourOp2
-        * (jump & jalJalrN & !offset) -> sJal
-        * (jump & !jalJalrN) -> sJalr
+        * (jump & jalJalrN & !offset) -> sJ
+        * (jump & !jalJalrN) -> sJ
         * memory -> sMmap
         * (_) -> sWriteBackAlu2reg
         */
       // TODO
       sAlu.whenIsActive{}
+
+      /**
+        * 内存映射
+        *
+        * (0x00000000 - 0x7FFFFFFF) -> sExtMem[WHB]
+        * (0x80000000 - 0xBFFFFFFF) -> sIo[WHB]
+        * (0xC0000000 - 0xFFFFFFFF) -> sPriMem[WHB]
+        */
+      // TODO
+      sMmap.whenIsActive{}
+
+      /**
+        * 私有内存字/半字/字节操作
+        *
+        * (memWrite) -> sIncPC
+        * (!memWrite) -> sWriteBackMem2Reg
+        */
+      // TODO
+      sPriMemW.whenIsActive{}
+      sPriMemH.whenIsActive{}
+      sPriMemB.whenIsActive{}
+
+      /**
+        * 外部内存字/半字/字节操作
+        */
+      // TODO
+      sExtMemW.whenIsActive{}
+      sExtMemH.whenIsActive{}
+      sExtMemB.whenIsActive{}
+
+      /**
+        * 输入/输出设备字/半字/字节操作
+        */
+      // TODO
+      sIoW.whenIsActive{}
+      sIoH.whenIsActive{}
+      sIoB.whenIsActive{}
+
+      /**
+        * 跳转
+        *
+        * (branchJumpN) -> sFetch
+        * (!branchJumpN) -> sWriteBack -> sFetch
+        * (未对齐) -> sException
+        */
+      // TODO
+      sJ.whenIsActive{}
+
+      /**
+        * PC+4
+        *
+        * (_) -> sFetch
+        */
+      // TODO
+      sIncPc.whenIsActive{}
+
+      /**
+        * 回写
+        *
+        * (doJump) -> sFetch
+        * (_) -> sPcInc -> sFetch
+        */
+      // TODO
+      sWriteBack.whenIsActive{}
 
     } // when (io.run)
   }
