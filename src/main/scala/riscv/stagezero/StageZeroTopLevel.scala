@@ -445,6 +445,12 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       sIncPc.whenIsActive{}
 
       /**
+        * 异常，跳转至0xC0000004
+        */
+      // TODO
+      sException.whenIsActive{}
+
+      /**
         * 回写
         *
         * (doJump) -> sFetch
@@ -452,6 +458,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
         */
       // TODO
       sWriteBack.whenIsActive{}
+
 
     } // when (io.run)
   }
