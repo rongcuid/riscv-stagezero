@@ -280,7 +280,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * OP（运算）指令的解码。此时完整的指令已经读取完成。
         *
-        * (根据func3+funct7) -> sRs2Op2 -> sRs1Op1 -> sAlu -> sWriteBackAlu2reg
+        * (根据func3+funct7) -> sRs2Op2 -> sRs1Op1 -> sAlu -> sWriteBack
         * (非法指令) -> sException
         */
       // TODO
@@ -289,7 +289,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * OPIMM（即时数运算）指令的解码。
         *
-        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAlu -> sWriteBackAlu2reg
+        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAlu -> sWriteBack
         * (非法指令) -> sException
         */
       // TODO
@@ -298,7 +298,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * BRANCH（分支）指令的解码。
         *
-        * (_) -> sRs2Op2 -> sRs1Op1 -> sAlu -> sBr
+        * (_) -> sRs2Op2 -> sRs1Op1 -> sAlu -> sJ
         */
       // TODO
       sBrDec.whenIsActive{}
@@ -314,7 +314,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * JALR（跳转链接寄存器）指令的解码
         *
-        * sImmOp2 -> sRs1Op1 -> sAlu -> sJ -> sWriteBackAlu2reg
+        * (_) -> sImmOp2 -> sRs1Op1 -> sAlu -> sJ
         */
       // TODO
       sJalrDec.whenIsActive{}
@@ -322,7 +322,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * LOAD（读取）指令的解码
         *
-        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAlu (rs1 + imm) -> sMmap
+        * (_) -> sImmOp2 -> sRs1Op1 -> sAlu (rs1 + imm) -> sMmap
         */
       // TODO
       sLwDec.whenIsActive{}
@@ -330,7 +330,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
       /**
         * STORE（储存）指令的解码
         *
-        * (根据funct3) -> sImmOp2 -> sRs1Op1 -> sAlu (rs1 + imm) -> sMmap
+        * (_) -> sImmOp2 -> sRs1Op1 -> sAlu (rs1 + imm) -> sMmap
         */
       // TODO
       sSwDec.whenIsActive{}
@@ -383,8 +383,8 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
         * (jump & jalJalrN & offset) -> sResOp1FourOp2
         * (jump & jalJalrN & !offset) -> sJ
         * (jump & !jalJalrN) -> sJ
-        * memory -> sMmap
-        * (_) -> sWriteBackAlu2reg
+        * (memToReg) -> sMmap
+        * (_) -> sWriteBack
         */
       // TODO
       sAlu.whenIsActive{}
@@ -403,7 +403,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
         * 私有内存字/半字/字节操作
         *
         * (memWrite) -> sIncPC
-        * (!memWrite) -> sWriteBackMem2Reg
+        * (!memWrite) -> sWriteBack
         */
       // TODO
       sPriMemW.whenIsActive{}
