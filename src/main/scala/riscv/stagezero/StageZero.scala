@@ -121,6 +121,7 @@ case class StageZero(privMemSize: Int) extends Component {
       */
     val sReset = new State with EntryPoint
     val sInit = new State
+
     /**
       * 发射状态
       */
