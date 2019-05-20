@@ -49,6 +49,7 @@ case class StageZero(privMemSize: Int) extends Component {
     * 控制信号（寄存器）
     */
   val decode = Reg(Bool)
+
   val rs1Valid = Reg(Bool)
   val rs2Valid = Reg(Bool)
   val immValid = Reg(Bool)
@@ -79,7 +80,7 @@ case class StageZero(privMemSize: Int) extends Component {
   val inst = Reg(Bits(32 bits))
   val rs1 = Reg(Bits(32 bits))
   val rs2 = Reg(Bits(32 bits))
-  val pc = Reg(UInt(32 bits))
+  val pc = Reg(UInt(32 bits)) init U"32'hC0000040"
   val imm = Reg(Bits(32 bits))
 
   val aluSigned = Reg(Bool)
@@ -115,6 +116,11 @@ case class StageZero(privMemSize: Int) extends Component {
     * 核心状态机。
     */
   val fsmCore: StateMachine = new StateMachine {
+    /**
+      * 初始化
+      */
+    val sReset = new State with EntryPoint
+    val sInit = new State
     /**
       * 发射状态
       */
@@ -166,6 +172,18 @@ case class StageZero(privMemSize: Int) extends Component {
       * 运行主状态机
       */
     when (io.run) {
+      /**
+        * 初始化
+        */
+      sReset.whenIsActive{
+        // TODO vAddr
+        goto(sMem)
+      }
+
+      sInit.whenIsActive{
+        // Now does nothing
+        goto(sFetch)
+      }
       /**
         * 发射状态
         */
@@ -322,6 +340,9 @@ case class StageZero(privMemSize: Int) extends Component {
           }
         }.elsewhen(loadRs2){
           // TODO MMU
+        }.otherwise{
+          // TODO MMU
+          goto(sInit)
         }
       }
 
