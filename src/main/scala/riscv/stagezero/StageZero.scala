@@ -7,7 +7,7 @@ import spinal.lib.fsm._
 
 import scala.language.postfixOps
 
-case class StageZeroTopLevel(privMemSize: Int) extends Component {
+case class StageZero(privMemSize: Int) extends Component {
   val io = new Bundle {
     val run: Bool = in Bool
     val mem_ready: Bool = in Bool
@@ -35,7 +35,7 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
   val memPriv = Mem(Bits(16 bits), initialContent = firmware)
 
   val memPrivAddr: UInt = UInt(privMemAddrWidth bits)
-  val memPrivValid: Bool = Reg(Bool) init False
+  val memPrivValid: Bool = Bool
   val memPrivRData: Bits = Bits(16 bits)
   val memPrivWData: Bits = Bits(16 bits)
   val memPrivWen: Bool = Bool
@@ -466,6 +466,6 @@ case class StageZeroTopLevel(privMemSize: Int) extends Component {
 object StageZeroTopLevelSynthesis {
   def main(args: Array[String]): Unit = {
     //val firmware = Array.fill[Bits](128)(B(0, 32 bits))
-    SpinalVerilog(StageZeroTopLevel(512))
+    SpinalVerilog(StageZero(512))
   }
 }

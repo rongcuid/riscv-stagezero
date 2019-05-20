@@ -11,10 +11,14 @@ object SZAluOp extends SpinalEnum {
 
 case class SZAluIO() extends Bundle {
   val op1: Bits = in Bits(32 bits)
+  val op1Valid: Bool = in Bool
   val op2: Bits = in Bits(32 bits)
+  val op2Valid: Bool = in Bool
+
   val signed: Bool = in Bool
   val opSel: SpinalEnumCraft[SZAluOp.type] = in(SZAluOp)
   val res: Bits = out Bits(32 bits)
+  val resValid: Bool = out Bool
 }
 
 /**
