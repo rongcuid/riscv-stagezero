@@ -54,6 +54,15 @@ RISC-V RV32E v1.9
     - ``wbOp2`` 回写 ``aluOp2``
     - 以上两者皆否，回写 ``aluOut``
 
+有效信号
+------
+
+按照 ``信号 (来源)`` 的格式::
+
+    rs1Valid (MEM)
+    rs2Valid (MEM)
+    immValid (IMM)
+    aluOutValid (ALU)
 
 操作码解码
 --------
@@ -144,9 +153,15 @@ NOP
 
 ALU
 ---
+ALU是一个单独状态机，等待输入有效，计算，然后设输出有效
+
+IMM
+---
+IMM是一个单独状态机，等待立即数转换完成
 
 MEM
 ---
+MEM是一个单独状态机，等待内存操作完成
 
 LINK
 ----
