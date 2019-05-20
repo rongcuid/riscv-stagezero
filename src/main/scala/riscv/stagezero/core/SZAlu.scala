@@ -16,8 +16,14 @@ case class SZAluIO() extends Bundle {
   val op2Imm: Bool = in Bool
   val op2Four: Bool = in Bool
 
-  val op1Valid: Bool = in Bool
-  val op2Valid: Bool = in Bool
+  val rs1: Bits = in Bits(32 bits)
+  val rs2: Bits = in Bits(32 bits)
+  val pc: UInt = in UInt(32 bits)
+  val imm: Bits = in Bits(32 bits)
+
+  val rs1Valid: Bool = in Bool
+  val rs2Valid: Bool = in Bool
+  val immValid: Bool = in Bool
 
   val signed: Bool = in Bool
   val opSel: SpinalEnumCraft[SZAluOp.type] = in(SZAluOp)

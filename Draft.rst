@@ -120,7 +120,7 @@ LOAD
 ----
 设：``loadRs1 op2Imm immI alu memory writeback``
 
-状态 -> MEM (rs1) -> IMM (immI) ALU (rs1 + imm) -> MEM (aluout) -> WB (rd)
+状态 -> MEM (rs1) -> IMM (immI) -> ALU (rs1 + imm) -> MEM (aluout) -> WB (rd)
 
 STORE
 -----
@@ -169,9 +169,14 @@ MEM是一个单独状态机，等待内存操作完成
 LINK
 ----
 设：``op1Pc op2Four alu writeback``
-清：除了``jump``
+
+清：``link`` 与各种op1/op2选择
 
 状态 -> ALU (PC + 4) -> WB (aluout)
+
+JUMP
+----
+状态 -> FETCH
 
 WB
 --

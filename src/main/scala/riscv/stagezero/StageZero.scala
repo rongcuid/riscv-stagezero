@@ -44,10 +44,72 @@ case class StageZero(privMemSize: Int) extends Component {
   memPrivRData := memPriv.readWriteSync(
     memPrivAddr, memPrivWData, memPrivValid, memPrivWen, memPrivWstrb)
 
+
   /**
-    * 核心状态机。大部分使用摩尔状态机，以最大限度降低对主频的影响（大概）。注意：这也会导致周期数增加。
+    * 控制信号（寄存器）
     */
-  val core_fsm: StateMachine = new StateMachine {
+  val loadRs1 = Reg(Bool)
+  val op1Rs1 = Reg(Bool)
+  val op1Pc = Reg(Bool)
+
+  val op2Imm = Reg(Bool)
+  val op2Rs2 = Reg(Bool)
+  val op2Four = Reg(Bool)
+
+  val immI = Reg(Bool)
+  val immJ = Reg(Bool)
+
+  val alu = Reg(Bool)
+
+  val jump = Reg(Bool)
+  val link = Reg(Bool)
+
+  val writeback = Reg(Bool)
+
+  /**
+    * 数据单元
+    */
+  val rs1 = Reg(Bits(32 bits))
+  val rs1Valid = Reg(Bool)
+  val rs2 = Reg(Bits(32 bits))
+  val rs2Valid = Reg(Bool)
+  val pc = Reg(UInt(32 bits))
+  val imm = Reg(Bits(32 bits))
+  val immValid = Reg(Bool)
+
+  val aluSigned = Reg(Bool)
+  val aluOp = Reg(SZAluOp)
+
+  val aluRes = Bits(32 bits)
+  val aluResValid = Bool
+
+  val alu0 = SZAlu()
+
+  alu0.io.op1Rs1 <> op1Rs1
+  alu0.io.op1Pc <> op1Pc
+
+  alu0.io.op2Rs2 <> op2Rs2
+  alu0.io.op2Imm <> op2Imm
+  alu0.io.op2Four <> op2Four
+
+  alu0.io.rs1 <> rs1
+  alu0.io.rs2 <> rs2
+  alu0.io.pc <> pc
+  alu0.io.imm <> imm
+
+  alu0.io.rs1Valid <> rs1Valid
+  alu0.io.rs2Valid <> rs2Valid
+  alu0.io.immValid <> immValid
+
+  alu0.io.signed <> aluSigned
+  alu0.io.opSel <> aluOp
+  alu0.io.res <> aluRes
+  alu0.io.resValid <> aluResValid
+
+  /**
+    * 核心状态机。
+    */
+  val fsmCore: StateMachine = new StateMachine {
     /**
       * 发射状态
       */
@@ -89,23 +151,6 @@ case class StageZero(privMemSize: Int) extends Component {
       */
     val sWriteBack: State = new State
 
-    /**
-      * 控制信号（寄存器）
-      */
-    val loadRs1 = Reg(Bool)
-    val op1Pc = Reg(Bool)
-
-    val op2Imm = Reg(Bool)
-
-    val immI = Reg(Bool)
-    val immJ = Reg(Bool)
-
-    val alu = Reg(Bool)
-
-    val jump = Reg(Bool)
-    val link = Reg(Bool)
-
-    val writeback = Reg(Bool)
 
     /**
       * 运行主状态机
@@ -133,6 +178,7 @@ case class StageZero(privMemSize: Int) extends Component {
         jump := True
         link := True
         // TODO
+        goto(sImm)
       }
 
       sOpImm.whenIsActive{
@@ -142,6 +188,68 @@ case class StageZero(privMemSize: Int) extends Component {
         alu := True
         writeback := True
         // TODO
+        goto(sImm)
+      }
+
+      /**
+        * 加载与运算
+        */
+
+      sImm.whenIsActive{
+        when(immI) {
+          // TODO
+        }.elsewhen(immJ){
+          // TODO
+        }.otherwise{
+          // TODO
+        }
+
+        goto(sAlu) // 这个实现里，IMM 下一个状态必然是 ALU
+      }
+
+      sAlu.whenIsActive{
+        // 等待ALU运算结束
+        when(aluResValid){
+          alu := False
+          when(link){
+            goto(sLink)
+          }.elsewhen(writeback){
+            goto(sWriteBack)
+          }.otherwise{
+            //TODO Memory etc
+          }
+        }
+      }
+
+      /**
+        * 跳转
+        */
+      sLink.whenIsActive{
+        op1Pc := True
+        op2Four := True
+        op1Rs1 := False
+        op2Imm := False
+        op2Rs2 := False
+        link := False
+        writeback := True
+        goto(sAlu)
+      }
+
+      sJump.whenIsActive{
+        // TODO FETCH
+        pc := U(aluRes)
+      }
+
+      /**
+        * 回写
+        */
+      sWriteBack.whenIsActive{
+        // TODO
+        when(jump){
+          goto(sJump)
+        }.otherwise{
+          // TODO FETCH
+        }
       }
     } // when (io.run)
   }
