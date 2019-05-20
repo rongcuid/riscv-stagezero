@@ -48,34 +48,39 @@ case class StageZero(privMemSize: Int) extends Component {
   /**
     * 控制信号（寄存器）
     */
+  val decode = Reg(Bool)
+  val rs1Valid = Reg(Bool)
+  val rs2Valid = Reg(Bool)
+  val immValid = Reg(Bool)
+
   val loadRs1 = Reg(Bool)
   val op1Rs1 = Reg(Bool)
   val op1Pc = Reg(Bool)
 
+  val loadRs2 = Reg(Bool)
   val op2Imm = Reg(Bool)
   val op2Rs2 = Reg(Bool)
   val op2Four = Reg(Bool)
 
   val immI = Reg(Bool)
   val immJ = Reg(Bool)
+  val immU = Reg(Bool)
+  val immS = Reg(Bool)
+  val immB = Reg(Bool)
 
   val alu = Reg(Bool)
 
   val jump = Reg(Bool)
   val link = Reg(Bool)
-
   val writeback = Reg(Bool)
-
   /**
     * 数据单元
     */
+  val inst = Reg(Bits(32 bits))
   val rs1 = Reg(Bits(32 bits))
-  val rs1Valid = Reg(Bool)
   val rs2 = Reg(Bits(32 bits))
-  val rs2Valid = Reg(Bool)
   val pc = Reg(UInt(32 bits))
   val imm = Reg(Bits(32 bits))
-  val immValid = Reg(Bool)
 
   val aluSigned = Reg(Bool)
   val aluOp = Reg(SZAluOp)
@@ -113,12 +118,12 @@ case class StageZero(privMemSize: Int) extends Component {
     /**
       * 发射状态
       */
-    // TODO
+    val sFetch = new State
 
     /**
       * 一级解码（操作码）
       */
-    // TODO
+    val sDecode = new State
     /**
       * 二级解码
       */
@@ -141,6 +146,11 @@ case class StageZero(privMemSize: Int) extends Component {
     val sAlu: State = new State
 
     /**
+      * 内存状态
+      */
+    val sMem = new State
+
+    /**
       * 跳转相关状态
       */
     val sLink = new State
@@ -156,6 +166,77 @@ case class StageZero(privMemSize: Int) extends Component {
       * 运行主状态机
       */
     when (io.run) {
+      /**
+        * 发射状态
+        */
+      sFetch.whenIsActive{
+        decode := True
+        rs1Valid := False
+        rs2Valid := False
+        immValid := False
+        goto(sMem)
+      }
+
+      /**
+        * 一级解码状态
+        */
+      sDecode.whenIsActive{
+        loadRs1 := False
+        loadRs2 := False
+        op1Rs1 := False
+        op1Pc := False
+        op2Imm := False
+        op2Rs2 := False
+        op2Four := False
+        immI := False
+        immJ := False
+        immU := False
+        immS := False
+        immB := False
+        alu := False
+        jump := False
+        link := False
+        writeback := False
+        switch(inst(6 downto 0)) {
+          is(B"00_000_11"){
+            // TODO LOAD
+          }
+          is(B"01_000_11"){
+            // TODO STORE
+          }
+          is(B"00_011_11"){
+            // TODO MISC-MEM
+          }
+          is(B"11_000_11"){
+            // TODO BRANCH
+          }
+          is(B"11_001_11"){
+            // TODO JALR
+          }
+          is(B"11_011_11"){
+            goto(sJal)
+          }
+          is(B"11_100_11"){
+            // TODO SYSTEM
+          }
+          is(B"00_100_11"){
+            goto(sOpImm)
+          }
+          is(B"01_100_11"){
+            // TODO OP
+          }
+          is(B"00_101_11"){
+            // TODO AUIPC
+          }
+          is(B"01_101_11"){
+            // TODO LUI
+          }
+          default{
+            // TODO ILLEGAL INSTRUCTION
+          }
+        }
+      }
+
       /**
         * 二级解码状态，按照未完成架构测试所需要的顺序排列：
         *
@@ -218,6 +299,29 @@ case class StageZero(privMemSize: Int) extends Component {
           }.otherwise{
             //TODO Memory etc
           }
+        }
+      }
+
+      /**
+        * 内存
+        */
+      sMem.whenIsActive{
+        when(decode){
+          decode := False
+          goto(sDecode)
+        }.elsewhen(loadRs1){
+          // TODO MMU
+          rs1Valid := True
+          loadRs1 := False
+          when(!loadRs2){
+            when(op2Imm){
+              goto(sImm)
+            }.otherwise{
+              goto(sAlu)
+            }
+          }
+        }.elsewhen(loadRs2){
+          // TODO MMU
         }
       }
 
