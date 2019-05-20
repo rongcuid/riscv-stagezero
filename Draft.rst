@@ -168,7 +168,8 @@ MEM是一个单独状态机，等待内存操作完成
 
 LINK
 ----
-设：``op1Pc op2Four alu jump writeback``
+设：``op1Pc op2Four alu writeback``
+清：除了``jump``
 
 状态 -> ALU (PC + 4) -> WB (aluout)
 
