@@ -40,7 +40,7 @@ RISC-V RV32E v1.9
     - ``op2Four`` ALU: ``_ <> 4``
 * 立即数 ``immI, immJ, immU, immS, immB``
     - 选择立即数格式
-* alu 使用ALU
+* ``alu`` 使用ALU
 * 内存
     - ``mem`` 内存操作
     - ``store`` 如果``mem``， ``store``即储存，``!store``即读取；否则忽略
@@ -83,46 +83,55 @@ RISC-V RV32E v1.9
 OP
 --
 设：``loadRs1 loadRs2 alu writeback``
+
 状态 -> MEM (rs1/rs2) -> ALU (rs1 <> rs2) -> WB (rd)
 
 OP-IMM
 ------
 设：``loadRs1 op2Imm immI alu writeback``
+
 状态 -> MEM (rs1) -> IMM (immI) -> ALU (rs1 <> imm) -> WB (rd)
 
 JAL
 ---
 设：``op1Pc op2Imm immJ alu jump link writeback``
+
 状态 -> IMM (immJ) -> ALU (pc + imm) -> LINK
 
 JALR
 ----
 设：``loadRs1 op2Imm immI alu jump link wb``
+
 状态 -> MEM (rs1) -> IMM (immI) -> ALU (rs1 + imm) -> LINK
 
 LOAD
 ----
 设：``loadRs1 op2Imm immI alu memory writeback``
+
 状态 -> MEM (rs1) -> IMM (immI) ALU (rs1 + imm) -> MEM (aluout) -> WB (rd)
 
 STORE
 -----
 设：``loadRs1 op2Imm immS alu memory store``
+
 状态 -> MEM (rs1) -> IMM (immS) -> ALU (rs1 + imm) -> MEM (aluout)
 
 BRANCH
 ------
 设：``op1Pc op2Imm immB loadRs1 loadRs2 alu branch``
+
 状态 -> [MEM (rs1/rs2) <|> (IMM (immB) -> ALU (pc + imm))] -> ALU (rs1 <> rs2) -> BRANCH
 
 LUI
 ---
 设：``op2ImmU writeback``
+
 状态 -> WB (op2)
 
 AUIPC
 -----
 设：``op1Pc writeback``
+
 状态 -> WB (op1)
 
 SYSTEM
