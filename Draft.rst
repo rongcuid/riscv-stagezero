@@ -62,6 +62,9 @@ RISC-V RV32E v1.9
     rs1Valid (MEM)
     rs2Valid (MEM)
     immValid (IMM)
+
+    aluOp1Valid (Combinational)
+    aluOp2Valid (Combinational)
     aluOutValid (ALU)
 
 操作码解码
@@ -103,13 +106,13 @@ OP-IMM
 
 JAL
 ---
-设：``op1Pc op2Imm immJ alu jump link writeback``
+设：``op1Pc op2Imm immJ alu jump link``
 
 状态 -> IMM (immJ) -> ALU (pc + imm) -> LINK
 
 JALR
 ----
-设：``loadRs1 op2Imm immI alu jump link wb``
+设：``loadRs1 op2Imm immI alu jump link``
 
 状态 -> MEM (rs1) -> IMM (immI) -> ALU (rs1 + imm) -> LINK
 
@@ -165,6 +168,11 @@ MEM是一个单独状态机，等待内存操作完成
 
 LINK
 ----
+设：``op1Pc op2Four alu jump writeback``
+
+状态 -> ALU (PC + 4) -> WB (aluout)
 
 WB
 --
+``jump`` -> JUMP
+_ -> FETCH
