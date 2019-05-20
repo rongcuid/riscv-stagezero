@@ -83,47 +83,47 @@ MMU
 OP
 --
 设：``op1Rs1 op2Rs1 alu writeback``
-状态 -> MEM(rs1/rs2)
+状态 -> MEM (rs1/rs2) -> ALU (rs1 <> rs2) -> WB (rd)
 
 OP-IMM
 ------
 设：``op1Rs1 op2ImmI alu writeback``
-状态 -> MEM(rs1)
+状态 -> MEM (rs1) -> ALU (rs1 <> imm) -> WB (rd)
 
 JAL
 ---
 设：``op1Pc op2ImmJ alu jump link writeback``
-状态 -> ALU
+状态 -> ALU (pc + imm) -> LINK
 
 JALR
 ----
 设：``op1Rs1 op2ImmI alu jump link wb``
-状态 -> ALU
+状态 -> ALU (rs1 + imm) -> LINK
 
 LOAD
 ----
 设：``op1Rs1 op2ImmI alu memory writeback``
-状态 -> MEM(rs1)
+状态 -> MEM (rs1) -> ALU (rs1 + imm) -> MEM (aluout) -> WB (rd)
 
 STORE
 -----
 设：``op1Rs1 op2ImmS alu memory store``
-状态 -> MEM(rs1)
+状态 -> MEM (rs1) -> ALU (rs1 + imm) -> MEM (aluout)
 
 BRANCH
 ------
 设：``op1Pc op2ImmB op1Rs1 op2Rs2 alu branch``
-状态 -> MEM(rs1/rs2)
+状态 -> MEM (rs1/rs2) | (pc + imm) -> ALU (rs1 <> rs2) -> BRANCH
 
 LUI
 ---
-设：``op1Rs1 op2ImmU alu writeback``
-状态 -> MEM(rs1)
+设：``op2ImmU writeback``
+状态 -> WB (op2)
 
 AUIPC
 -----
-设：``op1Pc op2Rs2 alu writeback``
-状态 -> MEM(rs1)
+设：``op1Pc writeback``
+状态 -> WB (op1)
 
 SYSTEM
 ------
@@ -132,3 +132,18 @@ SYSTEM
 MISC-MEM
 --------
 NOP
+
+执行状态
+======
+
+ALU
+---
+
+MEM
+---
+
+LINK
+----
+
+WB
+--
