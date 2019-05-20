@@ -30,30 +30,30 @@ RISC-V RV32E v1.9
 ------
 
 * RS1
-    - ``op1Rs1``
-    - ``op1Pc``
+    - ``loadRs1`` MEM装载RS1
+    - ``op1Rs1`` ALU: ``rs1 <> _``
+    - ``op1Pc`` ALU: ``pc <> _``
 * RS2
-    - ``op2Rs2``
-    - ``op2ImmI``
-    - ``op2ImmJ``
-    - ``op2ImmS``
-    - ``op2ImmB``
-    - ``op2ImmU``
-    - ``op2Four``
-* alu
+    - ``loadRs2`` MEM装载RS2
+    - ``op2Rs2`` ALU: ``_ <> rs2``
+    - ``op2Imm`` ALU: ``_ <> imm``
+    - ``op2Four`` ALU: ``_ <> 4``
+* 立即数 ``immI, immJ, immU, immS, immB``
+    - 选择立即数格式
+* alu 使用ALU
 * 内存
-    - ``mem``
-    - ``store``
+    - ``mem`` 内存操作
+    - ``store`` 如果``mem``， ``store``即储存，``!store``即读取；否则忽略
 * 跳转
-    - ``jump``
-    - ``link``
-    - ``branch``
-* ``writeback``
+    - ``jump`` PC跳转
+    - ``link`` 回写``PC+4``至RD
+    - ``branch`` 分支跳转
+* 回写
+    - ``writeback`` 回写至RD
+    - ``wbOp1`` 回写``aluOp1``
+    - ``wbOp2`` 回写``aluOp2``
+    - 以上两者皆否，回写``aluOut``
 
-MMU
----
-
-16位宽，分半字读写
 
 操作码解码
 --------
@@ -82,38 +82,38 @@ MMU
 
 OP
 --
-设：``op1Rs1 op2Rs1 alu writeback``
+设：``loadRs1 loadRs2 alu writeback``
 状态 -> MEM (rs1/rs2) -> ALU (rs1 <> rs2) -> WB (rd)
 
 OP-IMM
 ------
-设：``op1Rs1 op2ImmI alu writeback``
-状态 -> MEM (rs1) -> ALU (rs1 <> imm) -> WB (rd)
+设：``loadRs1 op2Imm immI alu writeback``
+状态 -> MEM (rs1) -> IMM (immI) -> ALU (rs1 <> imm) -> WB (rd)
 
 JAL
 ---
-设：``op1Pc op2ImmJ alu jump link writeback``
-状态 -> ALU (pc + imm) -> LINK
+设：``op1Pc op2Imm immJ alu jump link writeback``
+状态 -> IMM (immJ) -> ALU (pc + imm) -> LINK
 
 JALR
 ----
-设：``op1Rs1 op2ImmI alu jump link wb``
-状态 -> ALU (rs1 + imm) -> LINK
+设：``loadRs1 op2Imm immI alu jump link wb``
+状态 -> MEM (rs1) -> IMM (immI) -> ALU (rs1 + imm) -> LINK
 
 LOAD
 ----
-设：``op1Rs1 op2ImmI alu memory writeback``
-状态 -> MEM (rs1) -> ALU (rs1 + imm) -> MEM (aluout) -> WB (rd)
+设：``loadRs1 op2Imm immI alu memory writeback``
+状态 -> MEM (rs1) -> IMM (immI) ALU (rs1 + imm) -> MEM (aluout) -> WB (rd)
 
 STORE
 -----
-设：``op1Rs1 op2ImmS alu memory store``
-状态 -> MEM (rs1) -> ALU (rs1 + imm) -> MEM (aluout)
+设：``loadRs1 op2Imm immS alu memory store``
+状态 -> MEM (rs1) -> IMM (immS) -> ALU (rs1 + imm) -> MEM (aluout)
 
 BRANCH
 ------
-设：``op1Pc op2ImmB op1Rs1 op2Rs2 alu branch``
-状态 -> MEM (rs1/rs2) | (pc + imm) -> ALU (rs1 <> rs2) -> BRANCH
+设：``op1Pc op2Imm immB loadRs1 loadRs2 alu branch``
+状态 -> [MEM (rs1/rs2) <|> (IMM (immB) -> ALU (pc + imm))] -> ALU (rs1 <> rs2) -> BRANCH
 
 LUI
 ---
@@ -132,9 +132,6 @@ SYSTEM
 MISC-MEM
 --------
 NOP
-
-执行状态
-======
 
 ALU
 ---
