@@ -43,16 +43,16 @@ RISC-V RV32E v1.9
 * ``alu`` 使用ALU
 * 内存
     - ``mem`` 内存操作
-    - ``store`` 如果``mem``， ``store``即储存，``!store``即读取；否则忽略
+    - ``store`` 如果 ``mem``， ``store`` 即储存， ``!store`` 即读取；否则忽略
 * 跳转
     - ``jump`` PC跳转
     - ``link`` 回写``PC+4``至RD
     - ``branch`` 分支跳转
 * 回写
     - ``writeback`` 回写至RD
-    - ``wbOp1`` 回写``aluOp1``
-    - ``wbOp2`` 回写``aluOp2``
-    - 以上两者皆否，回写``aluOut``
+    - ``wbOp1`` 回写 ``aluOp1``
+    - ``wbOp2`` 回写 ``aluOp2``
+    - 以上两者皆否，回写 ``aluOut``
 
 
 操作码解码
