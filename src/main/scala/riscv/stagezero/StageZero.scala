@@ -122,6 +122,7 @@ case class StageZero(privMemSize: Int) extends Component {
   val mmu = SZMmu(privMemAddrWidth)
 
   val mmuReady = Bool
+  val mmuNextReady = Bool
   val mmuVAddr = Reg(UInt(32 bits))
   val mmuVAddrValid = Reg(Bool)
   val mmuWData = Reg(Bits(32 bits))
@@ -135,6 +136,7 @@ case class StageZero(privMemSize: Int) extends Component {
   val mmuAccessError = Bool
 
   mmu.io.ready <> mmuReady
+  mmu.io.nextReady <> mmuNextReady
   mmu.io.vAddr <> mmuVAddr
   mmu.io.vAddrValid <> mmuVAddrValid
   mmu.io.wData <> mmuWData
@@ -194,7 +196,7 @@ case class StageZero(privMemSize: Int) extends Component {
       * 内存状态
       */
     val sMem = new State
-
+    val memWaiting = Reg(Bool)
     /**
       * 跳转相关状态
       */
@@ -206,7 +208,6 @@ case class StageZero(privMemSize: Int) extends Component {
       */
     val sWriteBack: State = new State
 
-
     /**
       * 运行主状态机
       */
@@ -215,12 +216,11 @@ case class StageZero(privMemSize: Int) extends Component {
         * 初始化
         */
       sReset.whenIsActive{
-        // TODO vAddr
         goto(sMem)
       }
 
       sInit.whenIsActive{
-        // Now does nothing
+        // 现在没有别的功能
         goto(sFetch)
       }
       /**
@@ -231,6 +231,7 @@ case class StageZero(privMemSize: Int) extends Component {
         rs1Valid := False
         rs2Valid := False
         immValid := False
+
         goto(sMem)
       }
 
@@ -325,8 +326,7 @@ case class StageZero(privMemSize: Int) extends Component {
         immI := True
         alu := True
         writeback := True
-        // TODO
-        goto(sImm)
+        goto(sMem)
       }
 
       /**
@@ -361,27 +361,99 @@ case class StageZero(privMemSize: Int) extends Component {
 
       /**
         * 内存
+        *
+        * 进入本状态前，需要设置好内存操作。如果是写入，需要设置好写入数据。
         */
-      sMem.whenIsActive{
+      sMem
+        .onEntry{
+          memWaiting := False
+        }.whenIsActive{
+        val aRs1 = UInt(4 bits)
+        aRs1 := U(inst(18 downto 15))
+        val aRs2 = UInt(4 bits)
+        aRs2 := U(inst(23 downto 20))
+        val aRd = UInt(4 bits)
+        aRd := U(inst(10 downto 7))
+        // TODO Invalid x16+
+
+        // 自动开始操作
+        when(!memWaiting){
+          memWaiting := True
+          mmuVAddrValid := True
+        }
+
+        // 自动复位
+        when(memWaiting && mmuOutValid){memWaiting := False}
+
+        // 设定地址以及等待操作完成
         when(decode){
-          decode := False
-          goto(sDecode)
+          // 发射 -> 解码，因此读取PC
+          when(memWaiting) {
+            when(mmuOutValid){
+              inst := mmuOut
+              goto(sInit)
+            }
+          }.otherwise {
+            mmuVAddr := pc
+            mmuStore := False
+          }
         }.elsewhen(loadRs1){
-          // TODO MMU
-          rs1Valid := True
-          loadRs1 := False
-          when(!loadRs2){
-            when(op2Imm){
-              goto(sImm)
-            }.otherwise{
+          // 加载RS1
+          when(memWaiting){
+            // 无需加载RS2的话，加载立即数。否则继续加载RS2
+            when(mmuOutValid){
+              loadRs1 := False
+              rs1Valid := True
+              rs1 := mmuOut
+              when(!loadRs2) {
+                goto(sAlu)
+              }
+            }
+          }.elsewhen(!aRs1.orR){ // x0
+            rs1 := 0
+            rs1Valid := True
+            when(!loadRs2) {
               goto(sAlu)
             }
+          }.otherwise {
+            mmuVAddr := U((31 downto 30) -> U"11", (5 downto 2) -> aRs1, default -> false)
+            mmuStore := False
           }
         }.elsewhen(loadRs2){
-          // TODO MMU
+          // 加载RS2
+          when(memWaiting){
+            // RS2加载完成后，开始运算
+            when(mmuOutValid){
+              loadRs2 := False
+              rs2Valid := True
+              rs2 := mmuOut
+              goto(sAlu)
+            }
+          }.elsewhen(!aRs2.orR){ // x0
+            rs2 := 0
+            rs2Valid := True
+            goto(sAlu)
+          }.otherwise{
+            mmuVAddr := U((31 downto 30) -> U"11", (5 downto 2) -> aRs2, default -> false)
+            mmuStore := False
+          }
+        }.elsewhen(writeback){
+          // 回写
+          when(memWaiting){
+            // 写入需要等待ready
+            when(mmuNextReady){
+              writeback := False
+              // 回写后返回发射
+              goto(sFetch)
+            }
+          }.otherwise{
+            mmuVAddr := U((31 downto 30) -> U"11", (5 downto 2) -> aRd, default -> false)
+            mmuStore := True
+          }
         }.otherwise{
-          // TODO MMU
-          goto(sInit)
+          // 初始化设备，先读第一字
+          mmuVAddr := U"32hC0000000"
+          mmuStore := False
         }
       }
 

@@ -12,6 +12,7 @@ case class SZMmuIO(privAddrWidth: Int) extends Bundle {
     * CPU状态机的接口
     */
   val ready: Bool = out Bool
+  val nextReady: Bool = out Bool
   val vAddr: UInt = in UInt(32 bits) // 必须对齐
   val vAddrValid: Bool = in Bool
   val wData: Bits = in Bits(32 bits)
@@ -69,6 +70,9 @@ case class SZMmu(privAddrWidth: Int) extends Component {
 
     val vAddr = UInt(32 bits)
 
+    // 下一周期准备好
+    io.nextReady := False
+
     val ready = new State with EntryPoint {
       when(io.vAddrValid) {
         vAddr := io.vAddr
@@ -122,6 +126,7 @@ case class SZMmu(privAddrWidth: Int) extends Component {
           when(vAddr(29 downto privAddrWidth+1).orR){
             // 越界
             accessError := True
+            io.nextReady := True
             goto(ready)
           }.elsewhen(width === MmuOpWidth.word){
             // 字操作；按照低半字->高半字的顺序进行
@@ -156,6 +161,7 @@ case class SZMmu(privAddrWidth: Int) extends Component {
         priMemValid := False
         when(store){
           // 存储操作不需要读取内容
+          io.nextReady := True
           goto(ready)
         }.otherwise {
           // 读取操作只需读取半字
@@ -171,6 +177,7 @@ case class SZMmu(privAddrWidth: Int) extends Component {
       priMemValid := False
       when(store){
         // 存储操作无需读取内容
+        io.nextReady := True
         goto(ready)
       }.otherwise {
         // 读取操作只需读取半字
@@ -205,6 +212,7 @@ case class SZMmu(privAddrWidth: Int) extends Component {
         }
       }
       outValid := True
+      io.nextReady := True
       goto(ready)
     }
   }
