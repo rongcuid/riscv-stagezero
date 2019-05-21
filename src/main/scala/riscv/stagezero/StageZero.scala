@@ -74,8 +74,9 @@ case class StageZero(privMemSize: Int) extends Component {
   val jump = Reg(Bool)
   val link = Reg(Bool)
   val writeback = Reg(Bool)
+
   /**
-    * 数据单元
+    * 数据路径
     */
   val inst = Reg(Bits(32 bits))
   val rs1 = Reg(Bits(32 bits))
@@ -89,6 +90,9 @@ case class StageZero(privMemSize: Int) extends Component {
   val aluRes = Bits(32 bits)
   val aluResValid = Bool
 
+  /**
+    * 运算单元
+    */
   val alu0 = SZAlu()
 
   alu0.io.op1Rs1 <> op1Rs1
@@ -111,6 +115,40 @@ case class StageZero(privMemSize: Int) extends Component {
   alu0.io.opSel <> aluOp
   alu0.io.res <> aluRes
   alu0.io.resValid <> aluResValid
+
+  /**
+    * 内存管理单元
+    */
+  val mmu = SZMmu(privMemAddrWidth)
+
+  val mmuReady = Bool
+  val mmuVAddr = Reg(UInt(32 bits))
+  val mmuVAddrValid = Reg(Bool)
+  val mmuWData = Reg(Bits(32 bits))
+
+  val mmuSigned = Reg(Bool)
+  val mmuStore = Reg(Bool)
+  val mmuWidth = Reg(MmuOpWidth())
+
+  val mmuOut = Bits(32 bits)
+  val mmuOutValid = Bool
+  val mmuAccessError = Bool
+
+  mmu.io.ready <> mmuReady
+  mmu.io.vAddr <> mmuVAddr
+  mmu.io.vAddrValid <> mmuVAddrValid
+  mmu.io.wData <> mmuWData
+  mmu.io.signed <> mmuSigned
+  mmu.io.store <> mmuStore
+  mmu.io.width <> mmuWidth
+  mmu.io.memOut <> mmuOut
+  mmu.io.memOutValid <> mmuOutValid
+  mmu.io.accessError <> mmuAccessError
+  mmu.io.priMemAddr <> memPrivAddr
+  mmu.io.priMemValid <> memPrivValid
+  mmu.io.priMemRData <> memPrivRData
+  mmu.io.priMemWData <> memPrivWData
+  mmu.io.priMemWStrb <> memPrivWstrb
 
   /**
     * 核心状态机。
