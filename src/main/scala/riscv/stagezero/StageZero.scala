@@ -298,13 +298,13 @@ case class StageZero(privMemSize: Int) extends Component {
       /**
         * 二级解码状态，按照未完成架构测试所需要的顺序排列：
         *
-        * JAL OPIMM （基础测试 J + NOP）
+        * JAL JALR OPIMM （基础测试 JR + NOP）
         *
         * OP （无需新技术）
         *
         * BRANCH LOAD STORE SYSTEM （方便测试套件）
         *
-        * AUIPC LUI JALR
+        * AUIPC LUI
         *
         * MISC-MEM
         */
@@ -316,8 +316,17 @@ case class StageZero(privMemSize: Int) extends Component {
         alu := True
         jump := True
         link := True
-        // TODO
         goto(sImm)
+      }
+
+      sJalr.whenIsActive{
+        loadRs1 := True
+        op2Imm := True
+        immI := True
+        alu := True
+        jump := True
+        link := True
+        goto(sMem)
       }
 
       sOpImm.whenIsActive{
@@ -335,13 +344,27 @@ case class StageZero(privMemSize: Int) extends Component {
 
       sImm.whenIsActive{
         when(immI) {
-          // TODO
+          val base: SInt = SInt(12 bits)
+          base := S(inst(31 downto 20))
+          imm := B(base.resize(32))
         }.elsewhen(immJ){
+          imm := (
+            (31 downto 20) -> inst(31)
+            , (19 downto 12) -> inst(19 downto 12)
+            , 11 -> inst(20)
+            , (10 downto 5) -> inst(30 downto 25)
+            , (4 downto 1) -> inst(24 downto 21)
+            , 0 -> false
+          )
+        }.elsewhen(immU){
           // TODO
-        }.otherwise{
+        }.elsewhen(immS){
+          // TODO
+        }.elsewhen(immB){
           // TODO
         }
 
+        immValid := True
         goto(sAlu) // 这个实现里，IMM 下一个状态必然是 ALU
       }
 
@@ -398,6 +421,8 @@ case class StageZero(privMemSize: Int) extends Component {
             mmuStore := False
           }
         }.elsewhen(loadRs1){
+          // ALU 使用RS1
+          op1Rs1 := True
           // 加载RS1
           when(memWaiting){
             // 无需加载RS2的话，加载立即数。否则继续加载RS2
@@ -412,6 +437,8 @@ case class StageZero(privMemSize: Int) extends Component {
           }.elsewhen(!aRs1.orR){ // x0
             rs1 := 0
             rs1Valid := True
+            loadRs1 := False
+            // ALU使用RS1
             when(!loadRs2) {
               goto(sAlu)
             }
@@ -420,6 +447,7 @@ case class StageZero(privMemSize: Int) extends Component {
             mmuStore := False
           }
         }.elsewhen(loadRs2){
+          op2Rs2 := True
           // 加载RS2
           when(memWaiting){
             // RS2加载完成后，开始运算
@@ -432,6 +460,7 @@ case class StageZero(privMemSize: Int) extends Component {
           }.elsewhen(!aRs2.orR){ // x0
             rs2 := 0
             rs2Valid := True
+            loadRs2 := False
             goto(sAlu)
           }.otherwise{
             mmuVAddr := U((31 downto 30) -> U"11", (5 downto 2) -> aRs2, default -> false)
