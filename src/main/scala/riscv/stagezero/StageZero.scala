@@ -4,10 +4,11 @@ import riscv.stagezero.core._
 import spinal.core._
 import spinal.lib._
 import spinal.lib.fsm._
+import spinal.lib.misc.HexTools
 
 import scala.language.postfixOps
 
-case class StageZero(memPriv: Mem[Bits]) extends Component {
+case class StageZero(privMemSize: Int, firmware: String) extends Component {
   val io = new Bundle {
     val run: Bool = in Bool
     val mem_ready: Bool = in Bool
@@ -22,10 +23,14 @@ case class StageZero(memPriv: Mem[Bits]) extends Component {
     val gpio0_i: Bits = in Bits(8 bits)
     val dir0_o: Bits = out Bits(8 bits)
   }
+  // TODO
+  io.mem_valid := False
+  io.mem_wstrb := B"4'b0"
+  io.gpio0_o := B"8'b0"
+  io.dir0_o := B"8'b0"
   /**
     * 常量
     */
-  val privMemSize: Int = memPriv.wordCount * 2
   // 由于是半字地址，所以减少1位
   val privMemAddrWidth: Int = (Math.log10(privMemSize) / Math.log10(2)).toInt - 1
   //val firmware: Array[Bits] = Array.fill(privMemSize / 2)(B"8'b0")
@@ -33,7 +38,8 @@ case class StageZero(memPriv: Mem[Bits]) extends Component {
   /**
     * 私有可执行内存，地址从0xC0000000开始。SSRAM无输出寄存器，延迟一周期。
     */
-  //val memPriv = Mem(Bits(16 bits), initialContent = firmware)
+  val memPriv = Mem(Bits(16 bits), privMemSize / 2)
+  HexTools.initRam(memPriv, firmware, 0)
 
   val memPrivAddr: UInt = UInt(privMemAddrWidth bits)
   val memPrivValid: Bool = Bool
@@ -444,7 +450,7 @@ case class StageZero(memPriv: Mem[Bits]) extends Component {
               goto(sAlu)
             }
           }.otherwise {
-            mmuVAddr := U((31 downto 30) -> U"11", (5 downto 2) -> aRs1, default -> false)
+            mmuVAddr := U(32 bits, (31 downto 30) -> U"2'b11", (5 downto 2) -> aRs1, default -> false)
             mmuStore := False
           }
         }.elsewhen(loadRs2){
@@ -464,7 +470,7 @@ case class StageZero(memPriv: Mem[Bits]) extends Component {
             loadRs2 := False
             goto(sAlu)
           }.otherwise{
-            mmuVAddr := U((31 downto 30) -> U"11", (5 downto 2) -> aRs2, default -> false)
+            mmuVAddr := U(32 bits, (31 downto 30) -> U"2'b11", (5 downto 2) -> aRs2, default -> false)
             mmuStore := False
           }
         }.elsewhen(writeback){
@@ -477,12 +483,12 @@ case class StageZero(memPriv: Mem[Bits]) extends Component {
               goto(sFetch)
             }
           }.otherwise{
-            mmuVAddr := U((31 downto 30) -> U"11", (5 downto 2) -> aRd, default -> false)
+            mmuVAddr := U(32 bits, (31 downto 30) -> U"2'b11", (5 downto 2) -> aRd, default -> false)
             mmuStore := True
           }
         }.otherwise{
           // 初始化设备，先读第一字
-          mmuVAddr := U"32hC0000000"
+          mmuVAddr := U"32'hC0000000"
           mmuStore := False
         }
       }

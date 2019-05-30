@@ -12,12 +12,10 @@ import StageZero._
 object TestBench {
   val MAX_HANG_COUNT = 1024
   val PC_SUCCESS: BigInt = 0xC0000050
-  def runProgram(fileName: String): Unit = {
-    val priMem: Mem[Bits] = Mem(Bits(16 bits), 256)
-    HexTools.initRam(priMem, fileName, 0)
 
+  def runProgram(fileName: String): Unit = {
     val compiled = SimConfig.withWave.compile{
-      val dut = StageZero(priMem)
+      val dut = StageZero(512, fileName)
       dut.pc.simPublic()
       dut
     }
@@ -30,6 +28,7 @@ object TestBench {
       var hangCount = 0
       while(true) {
         val pc = dut.pc.toBigInt
+        println(f"(TB) PC = 0x$pc%08x")
         /**
           * 如果跳转至成功向量，则结束并报告成功
          */
@@ -51,6 +50,7 @@ object TestBench {
           * 发现挂起，结束并且报告失败
           */
         if (hangCount >= MAX_HANG_COUNT) {
+          println("(WW) Failure! CPU hangs")
           simFailure()
         }
         prev_pc = pc
