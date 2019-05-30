@@ -14,7 +14,7 @@ object TestBench {
   val PC_SUCCESS: BigInt = 0xC0000050
 
   def runProgram(fileName: String): Unit = {
-    val compiled = SimConfig.withWave.compile{
+    val compiled = SimConfig.withVcdWave.compile{
       val dut = StageZero(512, fileName)
       dut.pc.simPublic()
       dut.inst.simPublic()
@@ -22,13 +22,14 @@ object TestBench {
       dut
     }
 
-    compiled.doSim(s"Test: $fileName") { dut =>
+    compiled.doSim{ dut =>
       dut.clockDomain.forkStimulus(period = 10)
       SimTimeout(1000000 * 10)
 
       var prev_pc: BigInt = 0xC0000040
       var hangCount = 0
       for (i <- 0 until 1000000) {
+        dut.clockDomain.waitSampling()
         val pc = dut.pc.toBigInt
         val inst = dut.inst.toBigInt
         if (dut.dFetch.toBoolean) {
@@ -59,7 +60,6 @@ object TestBench {
           simFailure()
         }
         prev_pc = pc
-        dut.clockDomain.waitRisingEdge()
       }
     }
 
