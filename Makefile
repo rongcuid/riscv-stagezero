@@ -14,22 +14,23 @@ SUBARCH_BIN = $(SUBARCH_SRC:.S=.bin)
 SUBARCH_DISASM = $(SUBARCH_SRC:.S=.disasm)
 
 .PHONY: subarch-tests clean
-.PRECIOUS: %.bin %.elf %.hex %.disasm
+.PRECIOUS: tests/%.bin tests/%.elf tests/%.hex tests/%.disasm
 
 compile-subarch-tests: $(SUBARCH_BIN) $(SUBARCH_DISASM)
 
 tests/%.bin: tests/%.elf
-    $(RISCV_OBJCOPY) -O binary $^ $@
+	$(RISCV_OBJCOPY) -O binary $^ $@
 
 tests/%.disasm: tests/%.elf
-    $(RISCV_OBJDUMP) -D $^ > $@
+	$(RISCV_OBJDUMP) -S -D $^ > $@
 
 tests/%.elf: tests/%.S
-    $(RISCV_GCC) $(RISCV_GCC_OPTS) \
-        -Itests/ \
-        -Ifirmware/ \
-        -Tfirmware/generic_priv512B.ld \
-        -o $@
+	$(RISCV_GCC) $(RISCV_GCC_OPTS) \
+		-Itests/ \
+		-Ifirmware/ \
+		-Tfirmware/generic_priv512B.ld \
+		$^ \
+		-o $@
 
 clean:
-    rm -fv tests/*.{bin,elf,hex,disasm,o}
+	rm -fv tests/*.bin tests/*.elf tests/*.hex tests/*.disasm tests/*.o

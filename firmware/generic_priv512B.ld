@@ -3,8 +3,8 @@ ENTRY(_start)
 
 MEMORY
 {
-  extRam (rw) : ORIGIN = 0, length = 0x80000000; /* 2GB */
-  priRam (rwx) : ORIGIN = 0xC0000040, length = 448; /* 512 - 16 * 4 */
+  extRam (rw) : ORIGIN = 0x0, LENGTH = 0x80000000 /* 2GB */
+  priRam (rwx) : ORIGIN = 0xC0000040, LENGTH = 448 /* 512 - 16 * 4 */
 }
 
 ENTRY(_reset_vector)
