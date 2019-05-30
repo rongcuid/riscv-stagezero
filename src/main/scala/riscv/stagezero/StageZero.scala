@@ -8,6 +8,27 @@ import spinal.lib.misc.HexTools
 
 import scala.language.postfixOps
 
+object StageZero {
+  /**
+    * 由HexTools.initRam修改而来。本函数从Intel Hex加载16位内存
+    * @param ram 内存（16位）
+    * @param onChipRamHexFile ihex路径
+    * @param hexOffset 地址偏移值
+    */
+   def initRam16[T <: Data](ram : Mem[T], onChipRamHexFile : String, hexOffset : BigInt): Unit ={
+    val initContent = Array.fill[BigInt](ram.wordCount)(0)
+    HexTools.readHexFile(onChipRamHexFile, 0,(address,data) => {
+      //println(f"(TB) addr 0x$address%x data 0x$data%02x")
+      val addressWithoutOffset = (address - hexOffset).toInt
+      initContent(addressWithoutOffset >> 1) |= BigInt(data) << ((addressWithoutOffset & 1)*8)
+    })
+     for (i <- 16 until initContent.length / 2) {
+       println(f"(TB) ${initContent(i*2+1)}%04x${initContent(i*2)}%04x")
+     }
+    ram.initBigInt(initContent)
+}
+}
+
 case class StageZero(privMemSize: Int, firmware: String) extends Component {
   val io = new Bundle {
     val run: Bool = in Bool
@@ -39,7 +60,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
     * 私有可执行内存，地址从0xC0000000开始。SSRAM无输出寄存器，延迟一周期。
     */
   val memPriv = Mem(Bits(16 bits), privMemSize / 2)
-  HexTools.initRam(memPriv, firmware, 0)
+  StageZero.initRam16(memPriv, firmware, 0xC0000000l)
 
   val memPrivAddr: UInt = UInt(privMemAddrWidth bits)
   val memPrivValid: Bool = Bool

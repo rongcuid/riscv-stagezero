@@ -18,8 +18,9 @@ SUBARCH_DISASM = $(SUBARCH_SRC:.S=.disasm)
 
 compile-subarch-tests: $(SUBARCH_HEX) $(SUBARCH_DISASM)
 
-tests/%.hex: tests/%.bin
-	hexdump -v -e '1/4 "%08x " "\n"' $^ > $@
+tests/%.hex: tests/%.elf
+	#hexdump -v -e '1/4 "%08x " "\n"' $^ > $@
+	$(RISCV_OBJCOPY) -O ihex $^ $@
 
 tests/%.bin: tests/%.elf
 	$(RISCV_OBJCOPY) -O binary $^ $@

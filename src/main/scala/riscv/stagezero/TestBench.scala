@@ -17,6 +17,7 @@ object TestBench {
     val compiled = SimConfig.withWave.compile{
       val dut = StageZero(512, fileName)
       dut.pc.simPublic()
+      dut.inst.simPublic()
       dut
     }
 
@@ -28,7 +29,8 @@ object TestBench {
       var hangCount = 0
       while(true) {
         val pc = dut.pc.toBigInt
-        println(f"(TB) PC = 0x$pc%08x")
+        val inst = dut.inst.toBigInt
+        println(f"(TB) PC = 0x$pc%08x, inst = 0x$inst%08x")
         /**
           * 如果跳转至成功向量，则结束并报告成功
          */
