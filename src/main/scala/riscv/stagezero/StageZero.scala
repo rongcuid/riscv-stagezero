@@ -79,6 +79,8 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
     */
   val decode = Reg(Bool) init False
 
+  val mmuVAddrValid = Reg(Bool) init False
+
   val rs1Valid = Reg(Bool) init False
   val rs2Valid = Reg(Bool) init False
   val immValid = Reg(Bool) init False
@@ -153,7 +155,6 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
   val mmuReady = Bool
   val mmuNextReady = Bool
   val mmuVAddr = Reg(UInt(32 bits))
-  val mmuVAddrValid = Reg(Bool)
   val mmuWData = Reg(Bits(32 bits))
 
   val mmuSigned = Reg(Bool)
@@ -245,6 +246,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         * 初始化
         */
       sReset.whenIsActive{
+        mmuWidth := MmuOpWidth.word
         goto(sMem)
       }
 
@@ -261,6 +263,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         rs2Valid := False
         immValid := False
 
+        mmuWidth := MmuOpWidth.word
         goto(sMem)
       }
 
@@ -355,6 +358,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         alu := True
         jump := True
         link := True
+        mmuWidth := MmuOpWidth.word
         goto(sMem)
       }
 
@@ -364,6 +368,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         immI := True
         alu := True
         writeback := True
+        mmuWidth := MmuOpWidth.word
         goto(sMem)
       }
 
@@ -432,6 +437,8 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         when(!memWaiting){
           memWaiting := True
           mmuVAddrValid := True
+        }.otherwise{
+          mmuVAddrValid := False
         }
 
         // 自动复位
@@ -443,7 +450,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
           when(memWaiting) {
             when(mmuOutValid){
               inst := mmuOut
-              goto(sInit)
+              goto(sDecode)
             }
           }.otherwise {
             mmuVAddr := pc
@@ -510,8 +517,14 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
           }
         }.otherwise{
           // 初始化设备，先读第一字
-          mmuVAddr := U"32'hC0000000"
-          mmuStore := False
+          when(memWaiting) {
+            when(mmuOutValid) {
+              goto(sInit)
+            }
+          }.otherwise {
+            mmuVAddr := U"32'hC0000000"
+            mmuStore := False
+          }
         }
       }
 

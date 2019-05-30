@@ -111,10 +111,10 @@ case class SZMmu(privAddrWidth: Int) extends Component {
           * 地址映射以及副作用
           */
         switch(vAddr(31 downto 30)) {
-          is(U"10") { // 0x80XXXXXX
+          is(U"10") { // 0x8XXXXXXX
             // TODO
           }
-          is(U"11") { // 0xC0XXXXXX 私有内存
+          is(U"11") { // 0xCXXXXXXX 私有内存
             // 合法性判断与状态转移
             when(vAddr(29 downto privAddrWidth + 1).orR) {
               // 越界
@@ -219,7 +219,7 @@ case class SZMmu(privAddrWidth: Int) extends Component {
 
   io.ready := fsmMmu.isActive(fsmMmu.ready)
 
-  io.memOutValid := outValid
+  io.memOutValid := outValid && !io.vAddrValid
   io.memOut := memOut
 
   io.priMemAddr := priPAddr

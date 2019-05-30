@@ -1,49 +1,38 @@
 [*]
 [*] GTKWave Analyzer v3.3.86 (w)1999-2017 BSI
-[*] Thu May 30 22:11:20 2019
+[*] Thu May 30 22:46:03 2019
 [*]
 [dumpfile] "/home/demon/Workspace/Projects/RISC-V/riscv-stagezero/simWorkspace/StageZero/test.vcd"
-[dumpfile_mtime] "Thu May 30 22:10:51 2019"
-[dumpfile_size] 159714
+[dumpfile_mtime] "Thu May 30 22:37:17 2019"
+[dumpfile_size] 17715
 [savefile] "/home/demon/Workspace/Projects/RISC-V/riscv-stagezero/wave/stagezero.gtkw"
 [timestart] 0
 [size] 3840 2035
 [pos] -1 -1
-*-5.000000 61 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-5.000000 82 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.StageZero.
-[sst_width] 356
-[signals_width] 206
+[sst_width] 575
+[signals_width] 526
 [sst_expanded] 1
 [sst_vpaned_height] 625
 @28
 TOP.clk
 @22
 TOP.StageZero.pc[31:0]
+TOP.StageZero.inst[31:0]
 @200
 -State
-@29
+@820
 [color] 2
-TOP.StageZero.dReset
+TOP.StageZero.fsmCore_stateReg_string[143:0]
 [color] 2
-TOP.StageZero.dInit
-@28
-[color] 2
-TOP.StageZero.dFetch
-[color] 2
-TOP.StageZero.dDecode
-[color] 2
-TOP.StageZero.dMem
-[color] 2
-TOP.StageZero.dImm
-[color] 2
-TOP.StageZero.dJal
-[color] 2
-TOP.StageZero.dJalr
-[color] 2
-TOP.StageZero.dOpImm
+TOP.StageZero.fsmCore_stateNext_string[143:0]
 @200
 -Control Sig
+@29
+[color] 3
+TOP.StageZero.mmuVAddrValid
 @28
 [color] 3
 TOP.StageZero.decode
@@ -59,5 +48,60 @@ TOP.StageZero.jump
 TOP.StageZero.link
 [color] 3
 TOP.StageZero.writeback
+@200
+-MMU
+@820
+[color] 2
+TOP.StageZero.mmu.fsmMmu_stateReg_string[119:0]
+TOP.StageZero.mmu.fsmMmu_stateNext_string[119:0]
+@28
+TOP.StageZero.fsmCore_memWaiting
+@22
+TOP.StageZero.mmu.fsmMmu_vAddr[31:0]
+@28
+TOP.StageZero.mmu.io_vAddrValid
+@c00022
+TOP.StageZero.mmu.io_vAddr[31:0]
+@28
+(0)TOP.StageZero.mmu.io_vAddr[31:0]
+(1)TOP.StageZero.mmu.io_vAddr[31:0]
+(2)TOP.StageZero.mmu.io_vAddr[31:0]
+(3)TOP.StageZero.mmu.io_vAddr[31:0]
+(4)TOP.StageZero.mmu.io_vAddr[31:0]
+(5)TOP.StageZero.mmu.io_vAddr[31:0]
+(6)TOP.StageZero.mmu.io_vAddr[31:0]
+(7)TOP.StageZero.mmu.io_vAddr[31:0]
+(8)TOP.StageZero.mmu.io_vAddr[31:0]
+(9)TOP.StageZero.mmu.io_vAddr[31:0]
+(10)TOP.StageZero.mmu.io_vAddr[31:0]
+(11)TOP.StageZero.mmu.io_vAddr[31:0]
+(12)TOP.StageZero.mmu.io_vAddr[31:0]
+(13)TOP.StageZero.mmu.io_vAddr[31:0]
+(14)TOP.StageZero.mmu.io_vAddr[31:0]
+(15)TOP.StageZero.mmu.io_vAddr[31:0]
+(16)TOP.StageZero.mmu.io_vAddr[31:0]
+(17)TOP.StageZero.mmu.io_vAddr[31:0]
+(18)TOP.StageZero.mmu.io_vAddr[31:0]
+(19)TOP.StageZero.mmu.io_vAddr[31:0]
+(20)TOP.StageZero.mmu.io_vAddr[31:0]
+(21)TOP.StageZero.mmu.io_vAddr[31:0]
+(22)TOP.StageZero.mmu.io_vAddr[31:0]
+(23)TOP.StageZero.mmu.io_vAddr[31:0]
+(24)TOP.StageZero.mmu.io_vAddr[31:0]
+(25)TOP.StageZero.mmu.io_vAddr[31:0]
+(26)TOP.StageZero.mmu.io_vAddr[31:0]
+(27)TOP.StageZero.mmu.io_vAddr[31:0]
+(28)TOP.StageZero.mmu.io_vAddr[31:0]
+(29)TOP.StageZero.mmu.io_vAddr[31:0]
+(30)TOP.StageZero.mmu.io_vAddr[31:0]
+(31)TOP.StageZero.mmu.io_vAddr[31:0]
+@1401200
+-group_end
+@22
+TOP.StageZero.mmu.io_priMemAddr[7:0]
+TOP.StageZero.mmu.io_memOut[31:0]
+@28
+TOP.StageZero.mmu.io_memOutValid
+TOP.StageZero.mmuOutValid
 [pattern_trace] 1
 [pattern_trace] 0
