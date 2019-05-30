@@ -7,7 +7,7 @@ import spinal.lib.fsm._
 
 import scala.language.postfixOps
 
-case class StageZero(privMemSize: Int) extends Component {
+case class StageZero(memPriv: Mem[Bits]) extends Component {
   val io = new Bundle {
     val run: Bool = in Bool
     val mem_ready: Bool = in Bool
@@ -25,14 +25,15 @@ case class StageZero(privMemSize: Int) extends Component {
   /**
     * 常量
     */
+  val privMemSize: Int = memPriv.wordCount * 2
   // 由于是半字地址，所以减少1位
   val privMemAddrWidth: Int = (Math.log10(privMemSize) / Math.log10(2)).toInt - 1
-  val firmware: Array[Bits] = Array.fill(privMemSize / 2)(B"8'b0")
+  //val firmware: Array[Bits] = Array.fill(privMemSize / 2)(B"8'b0")
 
   /**
     * 私有可执行内存，地址从0xC0000000开始。SSRAM无输出寄存器，延迟一周期。
     */
-  val memPriv = Mem(Bits(16 bits), initialContent = firmware)
+  //val memPriv = Mem(Bits(16 bits), initialContent = firmware)
 
   val memPrivAddr: UInt = UInt(privMemAddrWidth bits)
   val memPrivValid: Bool = Bool
@@ -523,6 +524,6 @@ case class StageZero(privMemSize: Int) extends Component {
 object StageZeroTopLevelSynthesis {
   def main(args: Array[String]): Unit = {
     //val firmware = Array.fill[Bits](128)(B(0, 32 bits))
-    SpinalVerilog(StageZero(512))
+    //SpinalVerilog(StageZero(512))
   }
 }

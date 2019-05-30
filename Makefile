@@ -10,13 +10,16 @@ SUBARCH_SRC=
 SUBARCH_SRC += tests/00-JAL-JALR-OPIMM.S
 
 SUBARCH_ELF = $(SUBARCH_SRC:.S=.elf)
-SUBARCH_BIN = $(SUBARCH_SRC:.S=.bin)
+SUBARCH_HEX = $(SUBARCH_SRC:.S=.hex)
 SUBARCH_DISASM = $(SUBARCH_SRC:.S=.disasm)
 
 .PHONY: subarch-tests clean
 .PRECIOUS: tests/%.bin tests/%.elf tests/%.hex tests/%.disasm
 
-compile-subarch-tests: $(SUBARCH_BIN) $(SUBARCH_DISASM)
+compile-subarch-tests: $(SUBARCH_HEX) $(SUBARCH_DISASM)
+
+tests/%.hex: tests/%.bin
+	hexdump -v -e '1/4 "%08x " "\n"' $^ > $@
 
 tests/%.bin: tests/%.elf
 	$(RISCV_OBJCOPY) -O binary $^ $@
