@@ -271,6 +271,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         * 一级解码状态
         */
       sDecode.whenIsActive{
+        decode := False
         loadRs1 := False
         loadRs2 := False
         op1Rs1 := False
@@ -545,6 +546,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
       sJump.whenIsActive{
         // TODO FETCH
         pc := U(aluRes)
+        goto(sFetch)
       }
 
       /**
@@ -556,6 +558,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
           goto(sJump)
         }.otherwise{
           // TODO FETCH
+          goto(sFetch)
         }
       }
     } // when (io.run)
