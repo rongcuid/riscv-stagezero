@@ -2,6 +2,7 @@ package riscv.stagezero
 
 import riscv.stagezero.core._
 import spinal.core._
+import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.fsm._
 import spinal.lib.misc.HexTools
@@ -76,7 +77,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
   /**
     * 控制信号（寄存器）
     */
-  val decode = Reg(Bool)
+  val decode = Reg(Bool) init False
 
   val rs1Valid = Reg(Bool) init False
   val rs2Valid = Reg(Bool) init False
@@ -550,7 +551,26 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
   /**
     * 各种调试信号
     */
-  val dFetch = fsmCore.isActive(fsmCore.sFetch)
+  val dReset = Bool.simPublic()
+  val dInit = Bool.simPublic()
+  val dFetch = Bool.simPublic()
+  val dDecode = Bool.simPublic()
+  val dJal = Bool.simPublic()
+  val dJalr = Bool.simPublic()
+  val dOpImm = Bool.simPublic()
+  val dImm = Bool.simPublic()
+  val dAlu = Bool.simPublic()
+  val dMem = Bool.simPublic()
+  dReset := fsmCore.isActive(fsmCore.sReset)
+  dInit := fsmCore.isActive(fsmCore.sInit)
+  dFetch := fsmCore.isActive(fsmCore.sFetch)
+  dDecode := fsmCore.isActive(fsmCore.sDecode)
+  dJal := fsmCore.isActive(fsmCore.sJal)
+  dJalr := fsmCore.isActive(fsmCore.sJalr)
+  dOpImm := fsmCore.isActive(fsmCore.sOpImm)
+  dImm := fsmCore.isActive(fsmCore.sImm)
+  dAlu := fsmCore.isActive(fsmCore.sAlu)
+  dMem := fsmCore.isActive(fsmCore.sMem)
 }
 
 object StageZeroTopLevelSynthesis {

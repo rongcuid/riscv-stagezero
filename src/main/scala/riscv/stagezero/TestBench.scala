@@ -18,7 +18,6 @@ object TestBench {
       val dut = StageZero(512, fileName)
       dut.pc.simPublic()
       dut.inst.simPublic()
-      dut.dFetch.simPublic()
       dut
     }
 
