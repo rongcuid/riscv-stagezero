@@ -22,9 +22,9 @@ object StageZero {
       val addressWithoutOffset = (address - hexOffset).toInt
       initContent(addressWithoutOffset >> 1) |= BigInt(data) << ((addressWithoutOffset & 1)*8)
     })
-     for (i <- 16 until initContent.length / 2) {
-       println(f"(TB) ${initContent(i*2+1)}%04x${initContent(i*2)}%04x")
-     }
+//     for (i <- 16 until initContent.length / 2) {
+//       println(f"(TB) ${initContent(i*2+1)}%04x${initContent(i*2)}%04x")
+//     }
     ram.initBigInt(initContent)
 }
 }
@@ -78,30 +78,30 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
     */
   val decode = Reg(Bool)
 
-  val rs1Valid = Reg(Bool)
-  val rs2Valid = Reg(Bool)
-  val immValid = Reg(Bool)
+  val rs1Valid = Reg(Bool) init False
+  val rs2Valid = Reg(Bool) init False
+  val immValid = Reg(Bool) init False
 
-  val loadRs1 = Reg(Bool)
-  val op1Rs1 = Reg(Bool)
-  val op1Pc = Reg(Bool)
+  val loadRs1 = Reg(Bool) init False
+  val op1Rs1 = Reg(Bool) init False
+  val op1Pc = Reg(Bool) init False
 
-  val loadRs2 = Reg(Bool)
-  val op2Imm = Reg(Bool)
-  val op2Rs2 = Reg(Bool)
-  val op2Four = Reg(Bool)
+  val loadRs2 = Reg(Bool) init False
+  val op2Imm = Reg(Bool) init False
+  val op2Rs2 = Reg(Bool) init False
+  val op2Four = Reg(Bool) init False
 
-  val immI = Reg(Bool)
-  val immJ = Reg(Bool)
-  val immU = Reg(Bool)
-  val immS = Reg(Bool)
-  val immB = Reg(Bool)
+  val immI = Reg(Bool) init False
+  val immJ = Reg(Bool) init False
+  val immU = Reg(Bool) init False
+  val immS = Reg(Bool) init False
+  val immB = Reg(Bool) init False
 
-  val alu = Reg(Bool)
+  val alu = Reg(Bool) init False
 
-  val jump = Reg(Bool)
-  val link = Reg(Bool)
-  val writeback = Reg(Bool)
+  val jump = Reg(Bool) init False
+  val link = Reg(Bool) init False
+  val writeback = Reg(Bool) init False
 
   /**
     * 数据路径
@@ -183,7 +183,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
   /**
     * 核心状态机。
     */
-  val fsmCore: StateMachine = new StateMachine {
+  val fsmCore = new StateMachine {
     /**
       * 初始化
       */
@@ -546,6 +546,11 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
       }
     } // when (io.run)
   }
+
+  /**
+    * 各种调试信号
+    */
+  val dFetch = fsmCore.isActive(fsmCore.sFetch)
 }
 
 object StageZeroTopLevelSynthesis {

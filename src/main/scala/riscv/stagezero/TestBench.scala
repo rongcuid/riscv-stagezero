@@ -10,7 +10,7 @@ import spinal.lib.misc.HexTools
 import StageZero._
 
 object TestBench {
-  val MAX_HANG_COUNT = 1024
+  val MAX_HANG_COUNT = 512
   val PC_SUCCESS: BigInt = 0xC0000050
 
   def runProgram(fileName: String): Unit = {
@@ -18,6 +18,7 @@ object TestBench {
       val dut = StageZero(512, fileName)
       dut.pc.simPublic()
       dut.inst.simPublic()
+      dut.dFetch.simPublic()
       dut
     }
 
@@ -27,10 +28,12 @@ object TestBench {
 
       var prev_pc: BigInt = 0xC0000040
       var hangCount = 0
-      while(true) {
+      for (i <- 0 until 1000000) {
         val pc = dut.pc.toBigInt
         val inst = dut.inst.toBigInt
-        println(f"(TB) PC = 0x$pc%08x, inst = 0x$inst%08x")
+        if (dut.dFetch.toBoolean) {
+          println(f"(TB) PC = 0x$pc%08x, inst = 0x$inst%08x")
+        }
         /**
           * 如果跳转至成功向量，则结束并报告成功
          */
@@ -56,7 +59,7 @@ object TestBench {
           simFailure()
         }
         prev_pc = pc
-        dut.clockDomain.waitSampling()
+        dut.clockDomain.waitRisingEdge()
       }
     }
 
