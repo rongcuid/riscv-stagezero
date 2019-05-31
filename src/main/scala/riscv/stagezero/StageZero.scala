@@ -335,13 +335,13 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
       /**
         * 二级解码状态，按照未完成架构测试所需要的顺序排列：
         *
-        * JAL JALR OPIMM （基础测试 JR + NOP）
+        * JAL NOP （基础测试）
         *
-        * OP （无需新技术）
+        * AUIPC LUI JALR（这样才能测试JALR）
         *
-        * BRANCH LOAD STORE SYSTEM （方便测试套件）
+        * BRANCH LOAD STORE SYSTEM （测试套件）
         *
-        * AUIPC LUI
+        * OP OPIMM （能与TB沟通才能真正测试这些）
         *
         * MISC-MEM
         */

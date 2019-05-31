@@ -7,7 +7,8 @@ RISCV_GCC_OPTS ?= -march=rv32e -mabi=ilp32e -static -mcmodel=medany -fvisibility
 all: compile-subarch-tests
 
 SUBARCH_SRC=
-SUBARCH_SRC += tests/00-JAL-JALR-OPIMM.S
+SUBARCH_SRC += tests/00-JAL-NOP.S
+SUBARCH_SRC += tests/01-JAL.S
 
 SUBARCH_ELF = $(SUBARCH_SRC:.S=.elf)
 SUBARCH_HEX = $(SUBARCH_SRC:.S=.hex)
