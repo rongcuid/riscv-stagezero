@@ -121,10 +121,14 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
   val aluRes = Bits(32 bits)
   val aluResValid = Bool
 
+  val tmp = Reg(Bits(32 bits))
+
   /**
     * 运算单元
     */
   val alu0 = SZAlu()
+
+  alu0.io.aluValid <> alu
 
   alu0.io.op1Rs1 <> op1Rs1
   alu0.io.op1Pc <> op1Pc
@@ -347,6 +351,8 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         op2Imm := True
         immJ := True
         alu := True
+        aluOp := SZAluOp.Add
+        aluSigned := False
         jump := True
         link := True
         goto(sImm)
@@ -357,6 +363,8 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         op2Imm := True
         immI := True
         alu := True
+        aluOp := SZAluOp.Add
+        aluSigned := False
         jump := True
         link := True
         mmuWidth := MmuOpWidth.word
@@ -404,9 +412,9 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
       }
 
       sAlu.whenIsActive{
+        alu := False
         // 等待ALU运算结束
         when(aluResValid){
-          alu := False
           when(link){
             goto(sLink)
           }.elsewhen(writeback){
@@ -533,6 +541,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         * 跳转
         */
       sLink.whenIsActive{
+        alu := True
         op1Pc := True
         op2Four := True
         op1Rs1 := False
@@ -540,12 +549,15 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         op2Rs2 := False
         link := False
         writeback := True
+        tmp := aluRes
         goto(sAlu)
       }
 
       sJump.whenIsActive{
-        // TODO FETCH
-        pc := U(aluRes)
+        pc := U(tmp)
+        when(tmp(1 downto 0).orR){
+          // TODO Exception
+        }
         goto(sFetch)
       }
 
