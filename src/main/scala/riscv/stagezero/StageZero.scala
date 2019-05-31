@@ -45,7 +45,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
     val gpio0_i: Bits = in Bits(8 bits)
     val dir0_o: Bits = out Bits(8 bits)
   }
-  // TODO
+  // TODO Unused now
   io.mem_valid := False
   io.mem_wstrb := B"4'b0"
   io.gpio0_o := B"8'b0"

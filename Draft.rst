@@ -68,6 +68,16 @@ RISC-V RV32E v1.9
     aluOp2Valid (Combinational)
     aluOutValid (ALU)
 
+FETCH
+-----
+
+发射状态
+
+设： ``decode``
+清： ``rs1Valid rs2Valid immValid``
+
+_ => MEM -> DECODE
+
 操作码解码
 --------
 
@@ -97,55 +107,55 @@ OP
 --
 设：``loadRs1 loadRs2 alu writeback``
 
-状态 -> MEM (rs1/rs2) -> ALU (rs1 <> rs2) -> WB (rd)
+_ => MEM (rs1/rs2) -> ALU (rs1 <> rs2) -> WB (rd)
 
 OP-IMM
 ------
 设：``loadRs1 op2Imm immI alu writeback``
 
-状态 -> MEM (rs1) -> IMM (immI) -> ALU (rs1 <> imm) -> WB (rd)
+_ => MEM (rs1) -> IMM (immI) -> ALU (rs1 <> imm) -> WB (rd)
 
 JAL
 ---
 设：``op1Pc op2Imm immJ alu jump link``
 
-状态 -> IMM (immJ) -> ALU (pc + imm) -> LINK
+_ => IMM (immJ) -> ALU (pc + imm) -> LINK
 
 JALR
 ----
 设：``loadRs1 op2Imm immI alu jump link``
 
-状态 -> MEM (rs1) -> IMM (immI) -> ALU (rs1 + imm) -> LINK
+_ => MEM (rs1) -> IMM (immI) -> ALU (rs1 + imm) -> LINK
 
 LOAD
 ----
 设：``loadRs1 op2Imm immI alu memory writeback``
 
-状态 -> MEM (rs1) -> IMM (immI) -> ALU (rs1 + imm) -> MEM (aluout) -> WB (rd)
+_ => MEM (rs1) -> IMM (immI) -> ALU (rs1 + imm) -> MEM (aluout) -> WB (rd)
 
 STORE
 -----
 设：``loadRs1 op2Imm immS alu memory store``
 
-状态 -> MEM (rs1) -> IMM (immS) -> ALU (rs1 + imm) -> MEM (aluout)
+_ => MEM (rs1) -> IMM (immS) -> ALU (rs1 + imm) -> MEM (aluout)
 
 BRANCH
 ------
 设：``op1Pc op2Imm immB loadRs1 loadRs2 alu branch``
 
-状态 -> [MEM (rs1/rs2) <|> (IMM (immB) -> ALU (pc + imm))] -> ALU (rs1 <> rs2) -> BRANCH
+_ => [MEM (rs1/rs2) <|> (IMM (immB) -> ALU (pc + imm))] -> ALU (rs1 <> rs2) -> BRANCH
 
 LUI
 ---
 设：``op2ImmU writeback``
 
-状态 -> WB (op2)
+_ => WB (op2)
 
 AUIPC
 -----
 设：``op1Pc writeback``
 
-状态 -> WB (op1)
+_ => WB (op1)
 
 SYSTEM
 ------
@@ -158,6 +168,8 @@ NOP
 ALU
 ---
 ALU是一个单独状态机，等待输入有效，计算，然后设输出有效
+
+清： ``alu``
 
 IMM
 ---
@@ -173,13 +185,23 @@ LINK
 
 清：``link`` 与各种op1/op2选择
 
-状态 -> ALU (PC + 4) -> WB (aluout)
+``tmp`` 记录跳转地址
+
+_ => ALU (PC + 4) -> WB (aluout)
 
 JUMP
 ----
-状态 -> FETCH
+清： ``jump``
+
+_ => FETCH
 
 WB
 --
+回写并且跳转PC
+
+设： ``op1Pc op2Four alu``
+清： ``writeback``
+
 ``jump`` -> JUMP
-_ -> ALU (PC + 4) -> WB -> FETCH
+``writeback`` => ALU (PC + 4) -> WB
+_ => FETCH

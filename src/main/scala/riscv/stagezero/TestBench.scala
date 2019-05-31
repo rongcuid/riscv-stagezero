@@ -25,7 +25,7 @@ object TestBench {
       dut.clockDomain.forkStimulus(period = 10)
       SimTimeout(1000000 * 10)
 
-      var prev_pc: BigInt = 0xC0000040
+      var prev_pc: BigInt = 0xC0000040L
       var hangCount = 0
       for (i <- 0 until 1000000) {
         dut.clockDomain.waitSampling()
