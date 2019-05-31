@@ -182,4 +182,4 @@ JUMP
 WB
 --
 ``jump`` -> JUMP
-_ -> FETCH
+_ -> ALU (PC + 4) -> WB -> FETCH

@@ -421,6 +421,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
             goto(sWriteBack)
           }.otherwise{
             //TODO Memory etc
+            goto(sWriteBack)
           }
         }
       }
@@ -483,9 +484,9 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
             rs1 := 0
             rs1Valid := True
             loadRs1 := False
-            // ALU使用RS1
             when(!loadRs2) {
-              goto(sAlu)
+              // 只加载RS1的话，下一周期必定IMM
+              goto(sImm)
             }
           }.otherwise {
             mmuVAddr := U(32 bits, (31 downto 30) -> U"2'b11", (5 downto 2) -> aRs1, default -> false)
@@ -554,6 +555,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
       }
 
       sJump.whenIsActive{
+        jump := False
         pc := U(tmp)
         when(tmp(1 downto 0).orR){
           // TODO Exception
@@ -565,11 +567,20 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         * 回写
         */
       sWriteBack.whenIsActive{
-        // TODO
+        writeback := False
         when(jump){
           goto(sJump)
+        }.elsewhen(writeback){
+          alu := True
+          aluOp := SZAluOp.Add
+          op1Pc := True
+          op1Rs1 := False
+          op2Four := True
+          op2Imm := False
+          op2Rs2 := False
+          goto(sAlu)
         }.otherwise{
-          // TODO FETCH
+          pc := U(aluRes)
           goto(sFetch)
         }
       }

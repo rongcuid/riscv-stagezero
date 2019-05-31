@@ -11,7 +11,7 @@ import StageZero._
 
 object TestBench {
   val MAX_HANG_COUNT = 512
-  val PC_SUCCESS: BigInt = 0xC0000050
+  val PC_SUCCESS: BigInt = 0xC0000050L
 
   def runProgram(fileName: String): Unit = {
     val compiled = SimConfig.withVcdWave.compile{
@@ -31,7 +31,7 @@ object TestBench {
         dut.clockDomain.waitSampling()
         val pc = dut.pc.toBigInt
         val inst = dut.inst.toBigInt
-        if (dut.dFetch.toBoolean) {
+        if (dut.dDecode.toBoolean) {
           println(f"(TB) PC = 0x$pc%08x, inst = 0x$inst%08x")
         }
         /**
