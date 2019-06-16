@@ -12,22 +12,23 @@ import scala.language.postfixOps
 object StageZero {
   /**
     * 由HexTools.initRam修改而来。本函数从Intel Hex加载16位内存
-    * @param ram 内存（16位）
+    *
+    * @param ram              内存（16位）
     * @param onChipRamHexFile ihex路径
-    * @param hexOffset 地址偏移值
+    * @param hexOffset        地址偏移值
     */
-   def initRam16[T <: Data](ram : Mem[T], onChipRamHexFile : String, hexOffset : BigInt): Unit ={
+  def initRam16[T <: Data](ram: Mem[T], onChipRamHexFile: String, hexOffset: BigInt): Unit = {
     val initContent = Array.fill[BigInt](ram.wordCount)(0)
-    HexTools.readHexFile(onChipRamHexFile, 0,(address,data) => {
+    HexTools.readHexFile(onChipRamHexFile, 0, (address, data) => {
       //println(f"(TB) addr 0x$address%x data 0x$data%02x")
       val addressWithoutOffset = (address - hexOffset).toInt
-      initContent(addressWithoutOffset >> 1) |= BigInt(data) << ((addressWithoutOffset & 1)*8)
+      initContent(addressWithoutOffset >> 1) |= BigInt(data) << ((addressWithoutOffset & 1) * 8)
     })
-//     for (i <- 16 until initContent.length / 2) {
-//       println(f"(TB) ${initContent(i*2+1)}%04x${initContent(i*2)}%04x")
-//     }
+    //     for (i <- 16 until initContent.length / 2) {
+    //       println(f"(TB) ${initContent(i*2+1)}%04x${initContent(i*2)}%04x")
+    //     }
     ram.initBigInt(initContent)
-}
+  }
 }
 
 case class StageZero(privMemSize: Int, firmware: String) extends Component {
@@ -37,13 +38,13 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
     val mem_err: Bool = in Bool
     val mem_valid: Bool = out Bool
     //val mem_addr: UInt = out UInt(31 bits)
-    val mem_rdata: Bits = in Bits(32 bits)
-    val mem_wstrb: Bits = out Bits(4 bits)
+    val mem_rdata: Bits = in Bits (32 bits)
+    val mem_wstrb: Bits = out Bits (4 bits)
     //val mem_wdata: Bits = out Bits(32 bits)
 
-    val gpio0_o: Bits = out Bits(8 bits)
-    val gpio0_i: Bits = in Bits(8 bits)
-    val dir0_o: Bits = out Bits(8 bits)
+    val gpio0_o: Bits = out Bits (8 bits)
+    val gpio0_i: Bits = in Bits (8 bits)
+    val dir0_o: Bits = out Bits (8 bits)
   }
   // TODO Unused now
   io.mem_valid := False
@@ -245,23 +246,24 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
     /**
       * 运行主状态机
       */
-    when (io.run) {
+    when(io.run) {
       /**
         * 初始化
         */
-      sReset.whenIsActive{
+      sReset.whenIsActive {
         mmuWidth := MmuOpWidth.word
         goto(sMem)
       }
 
-      sInit.whenIsActive{
+      sInit.whenIsActive {
         // 现在没有别的功能
         goto(sFetch)
       }
+
       /**
         * 发射状态
         */
-      sFetch.whenIsActive{
+      sFetch.whenIsActive {
         decode := True
         rs1Valid := False
         rs2Valid := False
@@ -274,7 +276,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
       /**
         * 一级解码状态
         */
-      sDecode.whenIsActive{
+      sDecode.whenIsActive {
         decode := False
         loadRs1 := False
         loadRs2 := False
@@ -293,40 +295,40 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         link := False
         writeback := False
         switch(inst(6 downto 0)) {
-          is(B"00_000_11"){
+          is(B"00_000_11") {
             // TODO LOAD
           }
-          is(B"01_000_11"){
+          is(B"01_000_11") {
             // TODO STORE
           }
-          is(B"00_011_11"){
+          is(B"00_011_11") {
             // TODO MISC-MEM
           }
-          is(B"11_000_11"){
+          is(B"11_000_11") {
             // TODO BRANCH
           }
-          is(B"11_001_11"){
+          is(B"11_001_11") {
             // TODO JALR
           }
-          is(B"11_011_11"){
+          is(B"11_011_11") {
             goto(sJal)
           }
-          is(B"11_100_11"){
+          is(B"11_100_11") {
             // TODO SYSTEM
           }
-          is(B"00_100_11"){
+          is(B"00_100_11") {
             goto(sOpImm)
           }
-          is(B"01_100_11"){
+          is(B"01_100_11") {
             // TODO OP
           }
-          is(B"00_101_11"){
+          is(B"00_101_11") {
             // TODO AUIPC
           }
-          is(B"01_101_11"){
+          is(B"01_101_11") {
             // TODO LUI
           }
-          default{
+          default {
             // TODO ILLEGAL INSTRUCTION
           }
         }
@@ -346,7 +348,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         * MISC-MEM
         */
 
-      sJal.whenIsActive{
+      sJal.whenIsActive {
         op1Pc := True
         op2Imm := True
         immJ := True
@@ -358,7 +360,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         goto(sImm)
       }
 
-      sJalr.whenIsActive{
+      sJalr.whenIsActive {
         loadRs1 := True
         op2Imm := True
         immI := True
@@ -371,7 +373,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         goto(sMem)
       }
 
-      sOpImm.whenIsActive{
+      sOpImm.whenIsActive {
         loadRs1 := True
         op2Imm := True
         immI := True
@@ -385,12 +387,12 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         * 加载与运算
         */
 
-      sImm.whenIsActive{
+      sImm.whenIsActive {
         when(immI) {
           val base: SInt = SInt(12 bits)
           base := S(inst(31 downto 20))
           imm := B(base.resize(32))
-        }.elsewhen(immJ){
+        }.elsewhen(immJ) {
           imm := (
             (31 downto 20) -> inst(31)
             , (19 downto 12) -> inst(19 downto 12)
@@ -399,11 +401,11 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
             , (4 downto 1) -> inst(24 downto 21)
             , 0 -> false
           )
-        }.elsewhen(immU){
+        }.elsewhen(immU) {
           // TODO
-        }.elsewhen(immS){
+        }.elsewhen(immS) {
           // TODO
-        }.elsewhen(immB){
+        }.elsewhen(immB) {
           // TODO
         }
 
@@ -411,15 +413,15 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         goto(sAlu) // 这个实现里，IMM 下一个状态必然是 ALU
       }
 
-      sAlu.whenIsActive{
+      sAlu.whenIsActive {
         alu := False
         // 等待ALU运算结束
-        when(aluResValid){
-          when(link){
+        when(aluResValid) {
+          when(link) {
             goto(sLink)
-          }.elsewhen(writeback){
+          }.elsewhen(writeback) {
             goto(sWriteBack)
-          }.otherwise{
+          }.otherwise {
             //TODO Memory etc
             goto(sWriteBack)
           }
@@ -432,9 +434,9 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         * 进入本状态前，需要设置好内存操作。如果是写入，需要设置好写入数据。
         */
       sMem
-        .onEntry{
+        .onEntry {
           memWaiting := False
-        }.whenIsActive{
+        }.whenIsActive {
         val aRs1 = UInt(4 bits)
         aRs1 := U(inst(18 downto 15))
         val aRs2 = UInt(4 bits)
@@ -444,21 +446,23 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         // TODO Invalid x16+
 
         // 自动开始操作
-        when(!memWaiting){
+        when(!memWaiting) {
           memWaiting := True
           mmuVAddrValid := True
-        }.otherwise{
+        }.otherwise {
           mmuVAddrValid := False
         }
 
         // 自动复位
-        when(memWaiting && mmuOutValid){memWaiting := False}
+        when(memWaiting && mmuOutValid) {
+          memWaiting := False
+        }
 
         // 设定地址以及等待操作完成
-        when(decode){
+        when(decode) {
           // 发射 -> 解码，因此读取PC
           when(memWaiting) {
-            when(mmuOutValid){
+            when(mmuOutValid) {
               inst := mmuOut
               goto(sDecode)
             }
@@ -466,13 +470,13 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
             mmuVAddr := pc
             mmuStore := False
           }
-        }.elsewhen(loadRs1){
+        }.elsewhen(loadRs1) {
           // ALU 使用RS1
           op1Rs1 := True
           // 加载RS1
-          when(memWaiting){
+          when(memWaiting) {
             // 无需加载RS2的话，加载立即数。否则继续加载RS2
-            when(mmuOutValid){
+            when(mmuOutValid) {
               loadRs1 := False
               rs1Valid := True
               rs1 := mmuOut
@@ -480,7 +484,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
                 goto(sAlu)
               }
             }
-          }.elsewhen(!aRs1.orR){ // x0
+          }.elsewhen(!aRs1.orR) { // x0
             rs1 := 0
             rs1Valid := True
             loadRs1 := False
@@ -492,40 +496,40 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
             mmuVAddr := U(32 bits, (31 downto 30) -> U"2'b11", (5 downto 2) -> aRs1, default -> false)
             mmuStore := False
           }
-        }.elsewhen(loadRs2){
+        }.elsewhen(loadRs2) {
           op2Rs2 := True
           // 加载RS2
-          when(memWaiting){
+          when(memWaiting) {
             // RS2加载完成后，开始运算
-            when(mmuOutValid){
+            when(mmuOutValid) {
               loadRs2 := False
               rs2Valid := True
               rs2 := mmuOut
               goto(sAlu)
             }
-          }.elsewhen(!aRs2.orR){ // x0
+          }.elsewhen(!aRs2.orR) { // x0
             rs2 := 0
             rs2Valid := True
             loadRs2 := False
             goto(sAlu)
-          }.otherwise{
+          }.otherwise {
             mmuVAddr := U(32 bits, (31 downto 30) -> U"2'b11", (5 downto 2) -> aRs2, default -> false)
             mmuStore := False
           }
-        }.elsewhen(writeback){
+        }.elsewhen(writeback) {
           // 回写
-          when(memWaiting){
+          when(memWaiting) {
             // 写入需要等待ready
-            when(mmuNextReady){
+            when(mmuNextReady) {
               writeback := False
               // 回写后返回发射
               goto(sFetch)
             }
-          }.otherwise{
+          }.otherwise {
             mmuVAddr := U(32 bits, (31 downto 30) -> U"2'b11", (5 downto 2) -> aRd, default -> false)
             mmuStore := True
           }
-        }.otherwise{
+        }.otherwise {
           // 初始化设备，先读第一字
           when(memWaiting) {
             when(mmuOutValid) {
@@ -541,7 +545,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
       /**
         * 跳转
         */
-      sLink.whenIsActive{
+      sLink.whenIsActive {
         alu := True
         op1Pc := True
         op2Four := True
@@ -554,10 +558,10 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         goto(sAlu)
       }
 
-      sJump.whenIsActive{
+      sJump.whenIsActive {
         jump := False
         pc := U(tmp)
-        when(tmp(1 downto 0).orR){
+        when(tmp(1 downto 0).orR) {
           // TODO Exception
         }
         goto(sFetch)
@@ -566,11 +570,11 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
       /**
         * 回写
         */
-      sWriteBack.whenIsActive{
+      sWriteBack.whenIsActive {
         writeback := False
-        when(jump){
+        when(jump) {
           goto(sJump)
-        }.elsewhen(writeback){
+        }.elsewhen(writeback) {
           alu := True
           aluOp := SZAluOp.Add
           op1Pc := True
@@ -579,7 +583,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
           op2Imm := False
           op2Rs2 := False
           goto(sAlu)
-        }.otherwise{
+        }.otherwise {
           pc := U(aluRes)
           goto(sFetch)
         }
