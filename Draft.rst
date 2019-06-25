@@ -155,7 +155,7 @@ AUIPC
 -----
 设：``op1Pc writeback``
 
-_ => WB (op1)
+_ => IMM (immU) -> ALU (pc + imm) -> WB (rd)
 
 SYSTEM
 ------

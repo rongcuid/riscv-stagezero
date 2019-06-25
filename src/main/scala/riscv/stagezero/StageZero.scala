@@ -308,7 +308,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
             // TODO BRANCH
           }
           is(B"11_001_11") {
-            // TODO JALR
+            goto(sJalr)
           }
           is(B"11_011_11") {
             goto(sJal)
@@ -385,10 +385,14 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
 
       sAuiPc.whenIsActive {
         op1Pc := True
+        op2Imm := True
+        aluOp := SZAluOp.Add
+        immU := True
+        alu := True
         writeback := True
         mmuWidth := MmuOpWidth.word
-        // PC + 0
-        goto(sAlu)
+        // PC + imm
+        goto(sImm)
       }
 
       /**
@@ -410,7 +414,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
             , 0 -> false
           )
         }.elsewhen(immU) {
-          // TODO
+          imm := inst(31 downto 12) ## B"12'b0"
         }.elsewhen(immS) {
           // TODO
         }.elsewhen(immB) {
@@ -493,7 +497,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
               rs1Valid := True
               rs1 := mmuOut
               when(!loadRs2) {
-                goto(sAlu)
+                goto(sImm)
               }
             }
           }.elsewhen(!aRs1.orR) { // x0
