@@ -70,7 +70,8 @@ case class SZAlu() extends Component {
     op2 := B"32'd4"
     op2Valid := True
   }.otherwise{
-    op2Valid := False
+    op2 := B"32'd0"
+    op2Valid := True
   }
 
   resValid := aluValid && op1Valid && op2Valid

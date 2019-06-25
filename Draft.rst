@@ -203,5 +203,5 @@ WB
 清： ``writeback``
 
 ``jump`` -> JUMP
-``writeback`` => ALU (PC + 4) -> WB
+``writeback`` => MEM (rd) -> ALU (PC + 4) -> WB
 _ => FETCH
