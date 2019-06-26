@@ -11,6 +11,7 @@ import StageZero._
 
 object TestBench {
   val MAX_HANG_COUNT = 512
+  val MAX_CLOCK = 2048
   val PC_SUCCESS: BigInt = 0xC0000050L
 
   def runProgram(fileName: String): Unit = {
@@ -27,6 +28,7 @@ object TestBench {
 
       var prev_pc: BigInt = 0xC0000040L
       var hangCount = 0
+      var clockCount = 0
       for (i <- 0 until 1000000) {
         dut.clockDomain.waitSampling()
         val pc = dut.pc.toBigInt
@@ -51,12 +53,17 @@ object TestBench {
         else {
           hangCount = 0
         }
+        clockCount += 1
 
         /**
           * 发现挂起，结束并且报告失败
           */
         if (hangCount >= MAX_HANG_COUNT) {
           println("(WW) Failure! CPU hangs")
+          simFailure()
+        }
+        if (clockCount >= MAX_CLOCK) {
+          println("(WW) Failure! Too many cycles")
           simFailure()
         }
         prev_pc = pc

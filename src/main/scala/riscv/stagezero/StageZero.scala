@@ -352,12 +352,13 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         */
 
       sLoad.whenIsActive {
-        op1Rs1 := True
+        loadRs1 := True
         op2Imm := True
         immI := True
         alu := True
         memory := True
         writeback := True
+        // TODO LW only
         goto(sMem)
       }
 
@@ -387,6 +388,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
       }
 
       sOpImm.whenIsActive {
+        // TODO aluOp
         loadRs1 := True
         op2Imm := True
         immI := True
@@ -455,6 +457,8 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         when(aluResValid) {
           when(link) {
             goto(sLink)
+          }.elsewhen(memory) {
+            goto(sMem)
           }.elsewhen(writeback) {
             goto(sWriteBack)
           }.otherwise {
