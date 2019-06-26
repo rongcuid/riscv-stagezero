@@ -149,7 +149,7 @@ LUI
 ---
 设：``op2ImmU writeback``
 
-_ => WB (op2)
+_ => IMM (immU) -> ALU (0 + immU) -> WB (op2)
 
 AUIPC
 -----

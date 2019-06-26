@@ -57,7 +57,8 @@ case class SZAlu() extends Component {
     op1Valid := True
     op1 := B(io.pc)
   }.otherwise{
-    op1Valid := False
+    op1Valid := True
+    op1 := B"32'b0"
   }
 
   when(io.op2Imm){

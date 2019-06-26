@@ -327,7 +327,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
             goto(sAuiPc)
           }
           is(B"01_101_11") {
-            // TODO LUI
+            goto(sLui)
           }
           default {
             // TODO ILLEGAL INSTRUCTION
@@ -393,6 +393,17 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         writeback := True
         mmuWidth := MmuOpWidth.word
         // PC + imm
+        goto(sImm)
+      }
+
+      sLui.whenIsActive {
+        // 0 + immU
+        op2Imm := True
+        aluOp := SZAluOp.Add
+        immU := True
+        alu := True
+        writeback := True
+        mmuWidth := MmuOpWidth.word
         goto(sImm)
       }
 
