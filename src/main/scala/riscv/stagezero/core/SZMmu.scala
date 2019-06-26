@@ -157,6 +157,7 @@ case class SZMmu(privAddrWidth: Int) extends Component {
           when(store) {
             // 存储操作不需要读取内容
             io.nextReady := True
+            priMemWStrb := B"00"
             goto(ready)
           }.otherwise {
             // 读取操作只需读取半字
@@ -175,6 +176,7 @@ case class SZMmu(privAddrWidth: Int) extends Component {
         when(store) {
           // 存储操作无需读取内容
           io.nextReady := True
+          priMemWStrb := B"00"
           goto(ready)
         }.otherwise {
           // 读取操作只需读取半字

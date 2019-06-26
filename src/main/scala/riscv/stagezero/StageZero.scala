@@ -186,6 +186,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
   mmu.io.priMemRData <> memPrivRData
   mmu.io.priMemWData <> memPrivWData
   mmu.io.priMemWStrb <> memPrivWstrb
+  memPrivWen := memPrivWstrb.orR
 
   /**
     * 核心状态机。
