@@ -38,6 +38,7 @@ object TestBench {
           * 如果跳转至成功向量，则结束并报告成功
          */
         if (pc == PC_SUCCESS) {
+          println(f"(II) Success! PC = 0x$pc%08x")
           simSuccess()
         }
 

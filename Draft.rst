@@ -155,7 +155,7 @@ AUIPC
 -----
 设：``op1Pc writeback``
 
-_ => WB (op1)
+_ => IMM (immU) -> ALU (pc + imm) -> WB (rd)
 
 SYSTEM
 ------
@@ -203,5 +203,5 @@ WB
 清： ``writeback``
 
 ``jump`` -> JUMP
-``writeback`` => ALU (PC + 4) -> WB
+``writeback`` => MEM (rd) -> ALU (PC + 4) -> WB
 _ => FETCH
