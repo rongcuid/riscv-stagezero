@@ -103,6 +103,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
 
   val alu = Reg(Bool) init False
   val memory = Reg(Bool) init False
+  val store = Reg(Bool) init False
 
   val jump = Reg(Bool) init False
   val link = Reg(Bool) init False
@@ -294,6 +295,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         immB := False
         alu := False
         memory := False
+        store := False
         jump := False
         link := False
         writeback := False
@@ -302,7 +304,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
             goto(sLoad)
           }
           is(B"01_000_11") {
-            // TODO STORE
+            goto(sStore)
           }
           is(B"00_011_11") {
             // TODO MISC-MEM
@@ -359,6 +361,18 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         memory := True
         writeback := True
         // TODO LW only
+        goto(sMem)
+      }
+
+      sStore.whenIsActive {
+        loadRs1 := True
+        loadRs2 := True
+        op2Imm := True
+        immS := True
+        alu := True
+        memory := True
+        store := True
+        // TODO SW only
         goto(sMem)
       }
 
@@ -442,7 +456,12 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
         }.elsewhen(immU) {
           imm := inst(31 downto 12) ## B"12'b0"
         }.elsewhen(immS) {
-          // TODO
+          imm := (
+            (31 downto 11) -> inst(31)
+            , (10 downto 5) -> inst(30 downto 25)
+            , (4 downto 1) -> inst(11 downto 8)
+            , 0 -> inst(7)
+          )
         }.elsewhen(immB) {
           // TODO
         }
@@ -535,7 +554,7 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
             mmuStore := False
           }
         }.elsewhen(loadRs2) {
-          op2Rs2 := True
+          op2Rs2 := !store
           // 加载RS2
           when(memWaiting) {
             // RS2加载完成后，开始运算
@@ -543,7 +562,11 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
               loadRs2 := False
               rs2Valid := True
               rs2 := mmuOut
-              goto(sAlu)
+              when(store){
+                goto(sImm)
+              }.otherwise {
+                goto(sAlu)
+              }
             }
           }.elsewhen(!aRs2.orR) { // x0
             rs2 := 0
@@ -558,16 +581,18 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
           }
         }.elsewhen(memory && !alu){
           // LOAD -> MEM -> IMM -> ALU -> MEM -> WB
+          // STORE -> MEM -> IMM -> ALU -> MEM
           // 第二个MEM
           when(memWaiting) {
-            when(mmuOutValid) {
+            when(mmuOutValid || mmuNextReady) {
               goto(sWriteBack)
             }
           }.otherwise{
             memWaiting := True
             mmuVAddrValid := True
             mmuVAddr := U(aluRes)
-            mmuStore := False
+            mmuStore := store
+            mmuWData := rs2
           }
         }.elsewhen(writeback) {
           // 回写
@@ -635,7 +660,8 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
       sWriteBack.whenIsActive {
         when(jump) {
           goto(sJump)
-        }.elsewhen(writeback) {
+        }.elsewhen(writeback || store) {
+          store := False
           alu := True
           aluOp := SZAluOp.Add
           op1Pc := True
@@ -645,8 +671,12 @@ case class StageZero(privMemSize: Int, firmware: String) extends Component {
           op2Rs2 := False
           memory := False
 
-          mmuWData := memory ? mmuOut | aluRes
-          goto(sMem)
+          when(store) {
+            goto(sAlu)
+          }.otherwise {
+            mmuWData := memory ? mmuOut | aluRes
+            goto(sMem)
+          }
         }.otherwise {
           pc := U(aluRes)
           goto(sFetch)
